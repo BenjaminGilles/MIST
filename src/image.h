@@ -40,8 +40,9 @@ public:
     image()
     {
         for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=0; voxelSize[i]=1.; }
-        CImg<int> tmp(255,1,1,3,1);
-        for(unsigned int i=0;i<255;++i) tmp(i)=(i+ i*25) % 359;
+        labelName.resize(256); for(unsigned int i=0;i<labelName.size();++i) { std::stringstream ss; ss<<i; labelName[i]=std::string("label ")+ss.str(); }
+        CImg<int> tmp(labelName.size(),1,1,3,1);
+        for(unsigned int i=0;i<labelName.size();++i) tmp(i)=(i+ i*25) % 359;
         //tmp.get_shared_channel(0).rand(0,359);
         palette = tmp.HSVtoRGB();
         brushSize=50;
@@ -101,8 +102,6 @@ public:
         else if (file.find(".raw")!=std::string::npos)             label.load_raw(filename,dim[0],dim[1],dim[2]);
         else return false;
 
-        labelName.resize(255); for(unsigned int i=0;i<255;++i) { std::stringstream ss; ss<<i; labelName[i]=std::string("label ")+ss.str(); }
-
         if(label.is_empty()) return false; else return true;
     }
 
@@ -124,7 +123,7 @@ public:
         if(iStream.is_open())
         {
             char txt[1024]; int i;
-            while(!iStream.eof()) { iStream >> i ; iStream.getline(txt,1024); if(!iStream.eof()) labelName[i]=std::string(txt+1);}
+            while(!iStream.eof()) { iStream >> i ; iStream.getline(txt,1024); if(!iStream.eof() && i>=0 && i<(int)labelName.size()) labelName[i]=std::string(txt+1);}
             iStream.close();
             return true;
         }
