@@ -105,6 +105,7 @@ signals:
     void statusChanged(const QString);
     void sliceChanged(int val);
     void selectionDone();
+    void renderAll();
 
     //void mousePressed(QMouseEvent *mouseEvent);
     //void mouseReleased(QMouseEvent *mouseEvent);
@@ -154,11 +155,15 @@ public:
         slider->setPageStep ( 1 );
         slider->setFixedHeight ( sliderHeight );
         connect(slider, SIGNAL( valueChanged(int) ), this, SLOT( changeSlider(int) ) );
-        connect(this, SIGNAL( sliceChanged(int) ), graphView, SLOT( setSlice(int) ) );
-        connect(graphView, SIGNAL( sliceChanged(int) ), this , SLOT( setSlider(int) ) );
 
+        connect(this, SIGNAL( sliceChanged(int) ), graphView, SLOT( setSlice(int) ) );
         connect(this, SIGNAL( sliceChanged(int) ), parent, SLOT( Render() ) );
+
+        connect(graphView, SIGNAL( sliceChanged(int) ), this , SLOT( setSlider(int) ) );
         connect(graphView, SIGNAL( sliceChanged(int) ), parent, SLOT( Render() ) );
+
+        connect(graphView, SIGNAL( renderAll() ), parent, SLOT( Render() ) );
+
         connect(graphView, SIGNAL( selectionDone() ), parent, SLOT( reinit() ) );
 
         label=new QLabel(this);
@@ -324,7 +329,7 @@ public slots:
     {
         viewMode=mode;
         for(unsigned int i=0;i<3;++i) view[i]->graphView->mode=mode;
-        Render(false);
+        Render(true);
     }
 
     GraphView::Mode getViewMode()    { return viewMode; }

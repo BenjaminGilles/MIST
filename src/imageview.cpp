@@ -64,26 +64,28 @@ void GraphView::keyPressEvent(QKeyEvent *event)
 
 
 
-
 void GraphView::drawBackground(QPainter *painter, const QRectF &rect)
 {
     Q_UNUSED(rect);
 
     QRectF sceneRect = this->sceneRect();
 
-    // Fill
-    if(img && !img->img.is_empty())
-    {
-        CImg<unsigned char> im = img->getCutplane(area);
-        img->overlayLabels(im,area,labelOpacity,labelBorderOnly,roiOpacity);
+    if(!img) return;
+    if(img->img.is_empty()) return;
 
-        if(showSlice[0]) img->overlaySliceTrace(im,area,0);
-        if(showSlice[1]) img->overlaySliceTrace(im,area,1);
 
-        im.permute_axes("cxyz");
-        QImage qimage = QImage(im.data(),im.height(),im.depth(),3*im.height(),QImage::Format_RGB888);
-        painter->drawImage(sceneRect,qimage);
-    }
+    CImg<unsigned char> im = img->getCutplane(area);
+    img->overlayLabels(im,area,labelOpacity,labelBorderOnly,roiOpacity);
+
+    if(showSlice[0]) img->overlaySliceTrace(im,area,0);
+    if(showSlice[1]) img->overlaySliceTrace(im,area,1);
+    if(mode==RegionGrowing) img->overlaySeed(im,area);
+
+    im.permute_axes("cxyz");
+    QImage qimage = QImage(im.data(),im.height(),im.depth(),3*im.height(),QImage::Format_RGB888);
+    painter->drawImage(sceneRect,qimage);
+
+
     //    else
     //    {
     //        QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
@@ -94,49 +96,30 @@ void GraphView::drawBackground(QPainter *painter, const QRectF &rect)
     //    }
     //    painter->drawRect(sceneRect);
 
-    //    {
-    //        double xy[2]={0,0};
-    //        img-> getPlaneLine(xy,area);
-    //        QRectF rect = this->sceneRect();
-    //        xy[0]*=rect.width();         xy[1]*=rect.height();
-    //        painter->setOpacity (0.5);
-    //        QColor col[2]; if(area==2) {col[0]=Qt::red; col[1]=Qt::green;} else if(area==1) {col[0]=Qt::red; col[1]=Qt::blue;} else {col[0]=Qt::blue; col[1]=Qt::green;}
-    //        if(showSlice[0])
-    //        {
-    //            painter->setPen ( QPen ( col[0], 1, Qt::SolidLine ) );
-    //            painter->drawLine(rect.x()+xy[0],rect.y(),rect.x()+xy[0],rect.y()+rect.height());
-    //        }
-    //        if(showSlice[1])
-    //        {
-    //            painter->setPen ( QPen ( col[1], 1, Qt::SolidLine ) );
-    //            painter->drawLine(rect.x(),rect.y()+xy[1],rect.x()+rect.width(),rect.y()+xy[1]);
-    //        }
-    //    }
-
-
     //qDebug()<<"drawBackground "<<area;
+}
+
+
+// paint RGBA image (foreground)
+void overlayRGBACImage(QPainter *painter, CImg<unsigned char>& im, const QRectF &rect, const qreal opacity=1.)
+{
+    im.permute_axes("cxyz");
+    QImage qimage = QImage(im.data(),im.height(),im.depth(),4*im.height(),QImage::Format_ARGB32);
+    painter->setOpacity(opacity);
+    painter->drawImage(rect,qimage);
 }
 
 
 
 void GraphView::drawForeground(QPainter *painter, const QRectF &/*rect*/)
 {
-    QRectF sceneRect = this->sceneRect();
-
     if(mode==Brush && this->hasFocus())
     {
-        unsigned int dimz, dimxy[2];
-        img-> getPlaneDim(dimz,dimxy,area);
-        CImg<unsigned char> im(dimxy[0],dimxy[1],1,4); im.fill(0);
+        CImg<unsigned char> im = img->getEmptyCutplane(area);
         img->overlayBrush(im,area);
-        cimg_forXYC(im,x,y,c) if(c!=3) if(im(x,y,0,c)!=0) im(x,y,0,3)=255;
-        im.permute_axes("cxyz");
-        QImage qimage = QImage(im.data(),im.height(),im.depth(),4*im.height(),QImage::Format_ARGB32);
-        painter->drawImage(sceneRect,qimage);
+        overlayRGBACImage(painter,im,this->sceneRect(),1);
     }
-
-
-    if(mode==Zoom && pressed==Qt::LeftButton && !pressedModifiers)
+    else if(mode==Zoom && pressed==Qt::LeftButton && !pressedModifiers)
     {
         // QRectF r(pressedPos,currentPos);
         QRectF r(pressedPos,currentPos);
@@ -179,7 +162,16 @@ void GraphView::mousePressEvent(QMouseEvent *mouseEvent)
     {
         pressedPos=currentPos=mapToScene(mouseEvent->pos());
     }
-    if(mode==Brush && pressed==Qt::LeftButton) {img->selectBrush(area,!pressedModifiers.testFlag(Qt::ShiftModifier)); Render(true);}
+    if(mode==Brush && pressed==Qt::LeftButton)
+    {
+        img->selectBrush(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
+        Render(true);
+    }
+    else if(mode==RegionGrowing && pressed==Qt::LeftButton && !pressedModifiers)
+    {
+        img->selectSeed();
+        emit renderAll();
+    }
 }
 
 //void GraphView::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
@@ -206,7 +198,7 @@ void GraphView::mouseReleaseEvent(QMouseEvent *mouseEvent)
     pressed=Qt::NoButton;
     pressedModifiers=Qt::KeyboardModifiers();
 
-//    Render(true);
+    //    Render(true);
 }
 
 void GraphView::mouseMoveEvent(QMouseEvent *mouseEvent)

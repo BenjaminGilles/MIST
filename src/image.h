@@ -13,6 +13,9 @@
 typedef float real;
 static const real EPSILON=1E-10;
 static const unsigned char LINECOLORS[3][3]={{ 255,0,0 },{ 0,255,0 },{ 0,0,255 }};
+static const unsigned char BRUSHCOLOR[4]={255,0,0,255}; // BGRA
+static const unsigned char ROICOLOR[3]={50,50,255};
+static const unsigned char SEEDCOLOR[3]={0,255,0};
 
 template<typename T>
 class image
@@ -30,6 +33,7 @@ public:
     int slice[3]; // current slices of the mpr visualisation
     unsigned int viewBB[2][3]; // bounding box of the zoomed region
     unsigned int dimBB[3]; // dimension of zoomed region
+    int seed[3]; // 3D coordinates corresponding to seed position for region growing
     int brushSize;
     T intensityRange[2];
 
@@ -39,7 +43,7 @@ public:
 
     image()
     {
-        for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=0; voxelSize[i]=1.; }
+        for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=seed[i]=0; voxelSize[i]=1.; }
         labelName.resize(256); for(unsigned int i=0;i<labelName.size();++i) { std::stringstream ss; ss<<i; labelName[i]=std::string("label ")+ss.str(); }
         CImg<int> tmp(labelName.size(),1,1,3,1);
         for(unsigned int i=0;i<labelName.size();++i) tmp(i)=(i+ i*25) % 359;
@@ -77,7 +81,7 @@ public:
         if(img.is_empty()) return false;
 
         dim[0]=img.width(); dim[1]=img.height(); dim[2]=img.depth();
-        for(unsigned int i=0;i<3;++i)     {   slice[i]=coord[i]=dim[i]/2;  }
+        for(unsigned int i=0;i<3;++i)     {   slice[i]=coord[i]=seed[i]=dim[i]/2;  }
         resetViewBB();
 
         roi.resize(dim[0],dim[1],dim[2],1); roi.fill(0);
@@ -157,9 +161,19 @@ public:
         _max = img.max();
     }
 
+    CImg<unsigned char> getEmptyCutplane(const unsigned int area)
+    {
+        // initialize an image to be used for overlay (4 channels RGBA)
+        if(img.is_empty()) return CImg<unsigned char>();
+        int dir[2]; getPlaneDirections(dir,area);
+        CImg<unsigned char> im(dimBB[dir[0]],dimBB[dir[1]],1,4);
+        im.fill(0);
+        return im;
+    }
+
     CImg<unsigned char> getCutplane(const unsigned int area)
     {
-        if(img.is_empty()) return CImg<T>();
+        if(img.is_empty()) return CImg<unsigned char>();
 
         int P[3],dir[2]; getPlaneDirections(dir,area);
         CImg<T> p(dimBB[dir[0]],dimBB[dir[1]],1,3);
@@ -204,10 +218,8 @@ public:
             l=tmp;
 
         }
-        unsigned char rcolor[3]={50,50,255};
-
         //blend
-        cimg_forXY(l,x,y) if(r(x,y))      cimg_forC(cutplane,c) cutplane(x,y,0,c) = (1.-roiopacity)*cutplane(x,y,0,c)+roiopacity*rcolor[c];
+        cimg_forXY(l,x,y) if(r(x,y))      cimg_forC(cutplane,c) cutplane(x,y,0,c) = (1.-roiopacity)*cutplane(x,y,0,c)+roiopacity*ROICOLOR[c];
         else if(l(x,y)) cimg_forC(cutplane,c) cutplane(x,y,0,c) = (1.-opacity)*cutplane(x,y,0,c)+opacity*palette(l(x,y),0,0,c);
     }
 
@@ -223,8 +235,20 @@ public:
     {
         int dir[2]; getPlaneDirections(dir,area);
         int x=coord[dir[0]]-viewBB[0][dir[0]],y=coord[dir[1]]-viewBB[0][dir[1]];
-        cutplane.draw_circle(x,y,brushSize,LINECOLORS[0],1.0f,~0U);
+        cutplane.draw_circle(x,y,brushSize,BRUSHCOLOR,1.0f,~0U);
     }
+
+    void overlaySeed(CImg<unsigned char>& cutplane,const unsigned int area,const unsigned int size=2)
+    {
+        if(seed[area]!=slice[area]) return;
+        int dir[2]; getPlaneDirections(dir,area);
+        int x=seed[dir[0]]-viewBB[0][dir[0]],y=seed[dir[1]]-viewBB[0][dir[1]];
+        cutplane.draw_line(x-size,y,0,x-1,y,0,SEEDCOLOR)
+                .draw_line(x+1,y,0,x+size,y,0,SEEDCOLOR)
+                .draw_line(x,y-size,0,x,y-1,0,SEEDCOLOR)
+                .draw_line(x,y+1,0,x,y+size,0,SEEDCOLOR);
+    }
+
 
     void selectBrush(const unsigned int area,const bool add)
     {
@@ -242,6 +266,11 @@ public:
             P[dir[1]]=Y;
             roi(P[0],P[1],P[2])=add;
         }
+    }
+
+    void selectSeed()
+    {
+        for(unsigned int i=0;i<3;++i)  seed[i]=coord[i];
     }
 
     void clearRoi()
