@@ -63,11 +63,11 @@ public:
     bool labelBorderOnly;
     enum Mode {Navigation,Zoom,Brush,RegionGrowing,Morpho,MarchingCubes};
     Mode mode;
-    bool pressed;
+    enum Qt::MouseButton pressed;
+    Qt::KeyboardModifiers pressedModifiers;
 
     image<T>* img;
     const unsigned int area;
-    bool onArea;
 
 public slots:
 
@@ -95,9 +95,9 @@ public slots:
         scene()->invalidate(this->sceneRect(), QGraphicsScene::ForegroundLayer);
     }
 
-    void setSlice(int val) // when slice is changed outside
+    bool setSlice(int val) // when slice is changed outside
     {
-        img->setSlice( val , area);
+        return img->setSlice( val , area);
         //        Render(true);
     }
 
@@ -105,10 +105,9 @@ signals:
     void statusChanged(const QString);
     void sliceChanged(int val);
     void selectionDone();
-    void areaChanged(int a);
 
-    void mousePressed(QMouseEvent *mouseEvent);
-    void mouseReleased(QMouseEvent *mouseEvent);
+    //void mousePressed(QMouseEvent *mouseEvent);
+    //void mouseReleased(QMouseEvent *mouseEvent);
     //    void mouseDoubleClicked(QMouseEvent *mouseEvent);
 
 
@@ -126,27 +125,13 @@ private:
     void drawForeground(QPainter *painter, const QRectF &rect);
     void mouseMoveEvent(QMouseEvent *mouseEvent);
     void mousePressEvent(QMouseEvent *mouseEvent);
-    void wheelEvent(QWheelEvent *event)
-    {
-        QGraphicsView::wheelEvent(event);
-        if(event->delta()==0) return;
-        int incr = (int)event->delta() / (int)std::abs(event->delta());
-        if((int)img->slice[area]+incr<=(int)img->viewBB[1][area] && (int)img->slice[area]+incr>=(int)img->viewBB[0][area])
-            changeSlice(img->slice[area]+incr);
-    }
-
-    void changeSlice(int val)
-    {
-        setSlice(val);
-        emit sliceChanged(img->slice[area]);
-    }
-
-
+    void wheelEvent(QWheelEvent *event);
     void mouseReleaseEvent(QMouseEvent *mouseEvent);
     //    void mouseDoubleClickEvent(QMouseEvent *mouseEvent);
+    void focusOutEvent ( QFocusEvent * event );
+
     QPointF pressedPos;
     QPointF currentPos;
-
 };
 
 //-----------------------------------------------------------------------------------------------//
@@ -343,7 +328,8 @@ public slots:
     }
 
     GraphView::Mode getViewMode()    { return viewMode; }
-
+/*
+ // use focus instead
     void changeArea(int area)
     {
         for(int i=0;i<3;++i)
@@ -356,13 +342,13 @@ public slots:
             }
         }
     }
+*/
 
 private:
     ImageView* setupImageView(const unsigned int area)
     {
         ImageView* iv=new ImageView(this,img,area);
         connect(iv, SIGNAL(statusChanged(const QString)), this, SLOT(changeStatus(const QString)));
-        connect(iv->graphView, SIGNAL(areaChanged(int)), this, SLOT(changeArea(int)));
 
         QString areatext[3]={QString("ZY"),QString("XZ"),QString("XY")};
         showViewAct[area] = new QAction(tr("&Show ")+areatext[area], this);

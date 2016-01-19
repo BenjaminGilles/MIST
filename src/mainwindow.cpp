@@ -126,13 +126,17 @@ void MainWindow::setup(const QString filename)
         }
     }
 
-    view->reinit();
-    mprview->reinit();
-    labelTable->updateTable();
+    reinit();
 }
 
 
-
+void MainWindow::reinit()
+{
+    view->reinit();
+    regionGrowing->reinit();
+    mprview->reinit();
+    labelTable->updateTable();
+}
 
 QGroupBox *MainWindow::createTools()
 {
@@ -198,9 +202,7 @@ void MainWindow::load()
 
     if(img.loadImage(fileName.toStdString().c_str()))
     {
-        view->reinit();
-        mprview->reinit();
-        labelTable->updateTable();
+        reinit();
         changeStatus(tr("Opened '%1'").arg(fileName));
     }
     else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot open '%1'").arg(fileName));
@@ -223,7 +225,10 @@ void MainWindow::loadSegmentation()
     // try to load names
     std::string nameFile(fileName.toStdString());
     nameFile.replace(nameFile.begin()+nameFile.rfind('.'),nameFile.end(),"_names.txt");
-    img.loadNames(nameFile.c_str());
+    if(img.loadNames(nameFile.c_str()))
+    {
+        labelTable->updateTable();
+    }
 }
 
 

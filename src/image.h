@@ -45,7 +45,7 @@ public:
         for(unsigned int i=0;i<labelName.size();++i) tmp(i)=(i+ i*25) % 359;
         //tmp.get_shared_channel(0).rand(0,359);
         palette = tmp.HSVtoRGB();
-        brushSize=50;
+        brushSize=10;
         intensityRange[0]=intensityRange[1]=0;
     }
 
@@ -223,7 +223,25 @@ public:
     {
         int dir[2]; getPlaneDirections(dir,area);
         int x=coord[dir[0]]-viewBB[0][dir[0]],y=coord[dir[1]]-viewBB[0][dir[1]];
-        cutplane.draw_ellipse(x,y,brushSize,brushSize,0,LINECOLORS[0],1.0f,0x55555555U);
+        cutplane.draw_circle(x,y,brushSize,LINECOLORS[0],1.0f,~0U);
+    }
+
+    void selectBrush(const unsigned int area,const bool add)
+    {
+        int dir[2]; getPlaneDirections(dir,area);
+        int x=coord[dir[0]],y=coord[dir[1]];
+        bool tru=true;
+        CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
+        tmp.draw_circle(x,y,brushSize,&tru);
+        int P[3];
+        P[area]=coord[area];
+        cimg_forXY(tmp,X,Y)
+                if(tmp(X,Y))
+        {
+            P[dir[0]]=X;
+            P[dir[1]]=Y;
+            roi(P[0],P[1],P[2])=add;
+        }
     }
 
     void clearRoi()
@@ -276,10 +294,13 @@ public:
         return labelName[label(coord[0],coord[1],coord[2])];
     }
 
-    void setSlice(const int d,const unsigned int axis)
+    bool setSlice(const int d,const unsigned int area)
     {
-        slice[axis]=d;
-        clampWithinBB(slice[axis],axis);
+        int oldval=slice[area];
+        slice[area]=d;
+        clampWithinBB(slice[area],area);
+        coord[area] = slice[area];
+        if(oldval==slice[area]) return false; else return true;
     }
 
     void getPlaneDim(unsigned int& dimz, unsigned int dimxy[2], const unsigned int area)

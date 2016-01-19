@@ -4,19 +4,24 @@
 #include <tools/baseTool.h>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <widgets/qSlice.h>
 
 class regionGrowingTool:public baseTool
 {
     Q_OBJECT
 
 public:
-    regionGrowingTool(MPRImageView* v,image<T>* i):baseTool(v,i)  {}
+    regionGrowingTool(MPRImageView* v,image<T>* i):baseTool(v,i),rangew(NULL)  {}
     ~regionGrowingTool()
     {
+        if(rangew!=NULL) delete rangew;
     }
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
+        rangew = new QRangeWidget(parent);
+        connect(rangew, SIGNAL( rangeChanged(int,int) ), this, SLOT( changeRange(int,int) ) );
+
         QPushButton* switchDimAct = new QPushButton(tr("2D"), parent);
         switchDimAct->setStatusTip(tr("Restrict growing to 2D"));
         switchDimAct->setCheckable(true);
@@ -34,6 +39,7 @@ public:
         connect(ConnectedAct, SIGNAL(toggled(bool)),this, SLOT(Connected(bool)));
 
         QVBoxLayout *layout = new QVBoxLayout();
+        layout->addWidget(rangew);
         layout->addWidget(switchDimAct);
         layout->addWidget(InLabelAct);
         layout->addWidget(ConnectedAct);
@@ -51,6 +57,20 @@ public:
 
 public slots:
 
+    void reinit()
+    {
+        T _min=0,_max=0;
+        img->getIntensityRangeLimits(_min,_max);
+        rangew->setRangeLimits((int)floor((double)_min), (int)ceil((double)_max));
+    }
+
+    void changeRange(int _min, int _max)
+    {
+//        img->intensityRange[0]=(T)_min;
+//        img->intensityRange[1]=(T)_max;
+//        mprview->Render(true);
+    }
+
     void switchDim(bool val)
     {
     }
@@ -66,7 +86,7 @@ public slots:
 
 
 private:
-
+    QRangeWidget *rangew ;
 
 };
 

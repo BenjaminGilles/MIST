@@ -28,6 +28,7 @@ public slots:
     void saveSegmentation();
     void changeStatus(const QString);
 
+    void reinit();
     void ToolChanged(int index);
 
 
