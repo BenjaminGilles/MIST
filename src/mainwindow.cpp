@@ -10,10 +10,10 @@
 
 
 
-MainWindow::MainWindow()
+MainWindow::MainWindow(const QString filename)
 {
     this->resize(800,600);
-    setup();
+    setup(filename);
 }
 
 MainWindow::~MainWindow()
@@ -40,7 +40,7 @@ MainWindow::~MainWindow()
 }
 
 
-void MainWindow::setup()
+void MainWindow::setup(const QString filename)
 {
     aboutAct = new QAction(tr("&About"), this);
     aboutAct->setStatusTip(tr("Show About box"));
@@ -113,10 +113,19 @@ void MainWindow::setup()
 
     statusBar()->showMessage(tr("Ready"),2000);
 
-    // try to load sample data
-    img.loadImage( (QDir::currentPath()+QString("/../../../../data/pied.hdr")).toStdString().c_str());
-    img.loadLabel( (QDir::currentPath()+QString("/../../../../data/pied_label.raw")).toStdString().c_str());
-    img.loadNames( (QDir::currentPath()+QString("/../../../../data/pied_names.txt")).toStdString().c_str());
+    // try to load provided data
+    if(filename.size())
+    {
+        if(img.loadImage( filename.toStdString().c_str()))
+        {
+            QFileInfo fileInfo(filename);
+            QString labelfile = fileInfo.path()+QString("/")+fileInfo.baseName()+QString("_label.raw");
+            QString namefile = fileInfo.path()+QString("/")+fileInfo.baseName()+QString("_names.txt");
+            img.loadLabel( labelfile.toStdString().c_str());
+            img.loadNames( namefile.toStdString().c_str());
+        }
+    }
+
     view->reinit();
     mprview->reinit();
     labelTable->updateTable();
@@ -173,8 +182,6 @@ void MainWindow::ToolChanged(int index)
 
 }
 
-
-
 //action.push_back(ACTION(49, "S+left button -- Select label on screen",cimg::keyS,M0,LEFT));
 //action.push_back(ACTION(4, "Control+S -- Save labels",cimg::keyS,CTRL));
 //action.push_back(ACTION(48,"Control+Z -- Cancel addition/removal",cimg::keyZ,CTRL));
@@ -224,7 +231,7 @@ void MainWindow::saveSegmentation()
 {
     QString fileName = QFileDialog::getSaveFileName(this,
                                                     tr("Save Segmentation"), QString(),
-                                                     "Images (*.mhd *.hdr *.raw)");
+                                                    "Images (*.mhd *.hdr *.raw)");
 
     if (fileName.isEmpty()) return;
 

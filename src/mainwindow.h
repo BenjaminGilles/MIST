@@ -18,7 +18,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow();
+    MainWindow(const QString filename);
     ~MainWindow();
 
 public slots:
@@ -32,7 +32,7 @@ public slots:
 
 
 private:
-    void setup();
+    void setup(const QString filename);
     QGroupBox* createTools();
 
     viewTool* view;

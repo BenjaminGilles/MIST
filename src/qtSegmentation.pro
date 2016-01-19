@@ -30,9 +30,7 @@ HEADERS  += mainwindow.h\
 
 INCLUDEPATH += $$CIMG_PATH \
 
-FORMS    +=
-
-LIBS += -L/usr/X11R6/lib -lm -lpthread
+#LIBS += -L/usr/X11R6/lib -lm -lpthread
 
 #QMAKE_CXXFLAGS+= -fopenmp
 #QMAKE_LFLAGS +=  -fopenmp

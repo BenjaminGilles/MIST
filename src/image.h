@@ -31,6 +31,7 @@ public:
     unsigned int viewBB[2][3]; // bounding box of the zoomed region
     unsigned int dimBB[3]; // dimension of zoomed region
     int brushSize;
+    T intensityRange[2];
 
     CImg<unsigned char> label;
     std::vector<std::string> labelName;
@@ -44,6 +45,7 @@ public:
         //tmp.get_shared_channel(0).rand(0,359);
         palette = tmp.HSVtoRGB();
         brushSize=50;
+        intensityRange[0]=intensityRange[1]=0;
     }
 
     ~image()
@@ -80,10 +82,13 @@ public:
         roi.resize(dim[0],dim[1],dim[2],1); roi.fill(0);
         if((int)dim[0]!=label.width() || (int)dim[1]!=label.height() || (int)dim[2]!=label.depth()) {label.resize(dim[0],dim[1],dim[2],1); label.fill(0); }
 
+        intensityRange[0]=img.min();
+        intensityRange[1]=img.max();
+
         qDebug()<<"dim:"<<dim[0]<<","<<dim[1]<<","<<dim[2];
         qDebug()<<"voxelSize:"<<voxelSize[0]<<","<<voxelSize[1]<<","<<voxelSize[2];
 
-        if(img.is_empty()) return false; else return true;
+        return true;
     }
 
     bool loadLabel(const char* filename)
@@ -146,7 +151,7 @@ public:
         else if(area==2) {dir[0]=0; dir[1]=1; } // XY
     }
 
-    void getIntensityRange(T& _min,T& _max)
+    void getIntensityRangeLimits(T& _min,T& _max)
     {
         if(img.is_empty()) return;
         _min = img.min();
@@ -166,7 +171,7 @@ public:
             P[area]=slice[area];
             p(x,y,0,0)=p(x,y,0,1)=p(x,y,0,2)=img(P[0],P[1],P[2]);
         }
-        CImg<unsigned char> r=p.normalize(0,255);
+        CImg<unsigned char> r=p.get_cut(intensityRange[0],intensityRange[1]).normalize(0,255);
         return r;
     }
 

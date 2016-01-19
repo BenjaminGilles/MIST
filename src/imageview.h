@@ -129,6 +129,7 @@ private:
     void wheelEvent(QWheelEvent *event)
     {
         QGraphicsView::wheelEvent(event);
+        if(event->delta()==0) return;
         int incr = (int)event->delta() / (int)std::abs(event->delta());
         if((int)img->slice[area]+incr<=(int)img->viewBB[1][area] && (int)img->slice[area]+incr>=(int)img->viewBB[0][area])
             changeSlice(img->slice[area]+incr);
@@ -240,7 +241,9 @@ public slots:
 
     void setSlider ( int slice ) // when slice is changed outside
     {
+        slider->blockSignals(true);
         slider->setValue(slice-img->viewBB[0][area]);
+        slider->blockSignals(false);
         label->setNum(slice);
     }
 

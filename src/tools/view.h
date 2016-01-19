@@ -24,6 +24,7 @@ public:
         QGroupBox *groupBox = new QGroupBox(tr("View"));
 
         rangew = new QRangeWidget(parent);
+        connect(rangew, SIGNAL( rangeChanged(int,int) ), this, SLOT( changeRange(int,int) ) );
 
         zoom = new QPushButton("Zoom");
         zoom->setCheckable(true);
@@ -69,8 +70,15 @@ public slots:
     void reinit()
     {
         T _min=0,_max=0;
-        img->getIntensityRange(_min,_max);
+        img->getIntensityRangeLimits(_min,_max);
         rangew->setRangeLimits((int)floor((double)_min), (int)ceil((double)_max));
+    }
+
+    void changeRange(int _min, int _max)
+    {
+        img->intensityRange[0]=(T)_min;
+        img->intensityRange[1]=(T)_max;
+        mprview->Render(true);
     }
 
 private:
