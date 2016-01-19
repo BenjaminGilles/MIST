@@ -30,7 +30,6 @@ public:
     int slice[3]; // current slices of the mpr visualisation
     unsigned int viewBB[2][3]; // bounding box of the zoomed region
     unsigned int dimBB[3]; // dimension of zoomed region
-    bool is3D; // tells is the image is 3-dimensional, 2D+t otherwise
     int brushSize;
 
     CImg<unsigned char> label;
@@ -40,7 +39,6 @@ public:
     image()
     {
         for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=0; voxelSize[i]=1.; }
-        is3D=true;
         CImg<int> tmp(255,1,1,3,1);
         for(unsigned int i=0;i<255;++i) tmp(i)=(i+ i*25) % 359;
         //tmp.get_shared_channel(0).rand(0,359);
@@ -53,8 +51,9 @@ public:
 
     }
 
-    bool loadImage(const char* filename, bool is3d=true)
+    bool loadImage(const char* filename)
     {
+        if(fopen(filename, "r")==NULL) return false;
         std::string file(filename);
         if (file.find(".hdr")!=std::string::npos)        img.load_analyze(filename,voxelSize);
         else if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos
@@ -74,7 +73,6 @@ public:
 
         if(img.is_empty()) return false;
 
-        is3D=is3d;
         dim[0]=img.width(); dim[1]=img.height(); dim[2]=img.depth();
         for(unsigned int i=0;i<3;++i)     {   slice[i]=coord[i]=dim[i]/2;  }
         resetViewBB();
@@ -91,6 +89,7 @@ public:
     bool loadLabel(const char* filename)
     {
         if(img.is_empty()) return false;
+        if(fopen(filename, "r")==NULL) return false;
 
         std::string file(filename);
         if (file.find(".hdr")!=std::string::npos)             label.load_analyze(filename);
@@ -114,6 +113,7 @@ public:
 
     bool loadNames(const char* filename)
     {
+        if(fopen(filename, "r")==NULL) return false;
         std::string nameFile(filename);
         std::ifstream iStream (nameFile.c_str(), std::ifstream::in);
         if(iStream.is_open())
@@ -146,6 +146,12 @@ public:
         else if(area==2) {dir[0]=0; dir[1]=1; } // XY
     }
 
+    void getIntensityRange(T& _min,T& _max)
+    {
+        if(img.is_empty()) return;
+        _min = img.min();
+        _max = img.max();
+    }
 
     CImg<unsigned char> getCutplane(const unsigned int area)
     {

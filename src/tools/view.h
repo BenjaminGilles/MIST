@@ -68,7 +68,9 @@ public slots:
 
     void reinit()
     {
-        rangew->setRangeLimits((int)floor((double)img->img.min()), (int)ceil((double)img->img.max()));
+        T _min=0,_max=0;
+        img->getIntensityRange(_min,_max);
+        rangew->setRangeLimits((int)floor((double)_min), (int)ceil((double)_max));
     }
 
 private:

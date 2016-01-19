@@ -113,16 +113,10 @@ void MainWindow::setup()
 
     statusBar()->showMessage(tr("Ready"),2000);
 
-
-    img.loadImage("../data/pied.hdr",true);
-    img.loadLabel("../data/pied_label.raw");
-    img.loadNames("../data/pied_names.txt");
-
-//    img.loadImage("/data/Data/MRI/sohusim/EP/EP_JAMBE_16_03_2012_SOHUSIM/merge.mhd",true);
-//    img.loadLabel("/data/Data/MRI/sohusim/EP/EP_JAMBE_16_03_2012_SOHUSIM/merge_label.raw");
-//    img.loadNames("/data/Data/MRI/sohusim/EP/EP_JAMBE_16_03_2012_SOHUSIM/merge_names.txt");
-//    qDebug()<<"size:"<<img.dim[0]<<","<<img.dim[1]<<","<<img.dim[2];
-
+    // try to load sample data
+    img.loadImage( (QDir::currentPath()+QString("/../../../../data/pied.hdr")).toStdString().c_str());
+    img.loadLabel( (QDir::currentPath()+QString("/../../../../data/pied_label.raw")).toStdString().c_str());
+    img.loadNames( (QDir::currentPath()+QString("/../../../../data/pied_names.txt")).toStdString().c_str());
     view->reinit();
     mprview->reinit();
     labelTable->updateTable();
@@ -195,7 +189,7 @@ void MainWindow::load()
                                                     "Images (*.mhd *.dcm *.hdr)");
     if (fileName.isEmpty()) return;
 
-    if(img.loadImage(fileName.toStdString().c_str(),false))
+    if(img.loadImage(fileName.toStdString().c_str()))
     {
         view->reinit();
         mprview->reinit();
