@@ -105,7 +105,7 @@ signals:
     void statusChanged(const QString);
     void sliceChanged(int val);
     void selectionDone();
-    void renderAll();
+    void seedSelected();
 
     //void mousePressed(QMouseEvent *mouseEvent);
     //void mouseReleased(QMouseEvent *mouseEvent);
@@ -149,7 +149,7 @@ public:
         : QWidget(parent) , img(v), area(a)
     {
         graphView=new GraphView(this,img,area);
-        connect(graphView, SIGNAL(statusChanged(const QString)), this, SLOT(changeStatus(const QString)));
+        connect(graphView, SIGNAL(statusChanged(const QString)), parent, SLOT(changeStatus(const QString)));
 
         slider=new QSlider(Qt::Horizontal,this);
         slider->setPageStep ( 1 );
@@ -162,7 +162,7 @@ public:
         connect(graphView, SIGNAL( sliceChanged(int) ), this , SLOT( setSlider(int) ) );
         connect(graphView, SIGNAL( sliceChanged(int) ), parent, SLOT( Render() ) );
 
-        connect(graphView, SIGNAL( renderAll() ), parent, SLOT( Render() ) );
+        connect(graphView, SIGNAL( seedSelected() ), parent, SLOT( selectSeed() ) );
 
         connect(graphView, SIGNAL( selectionDone() ), parent, SLOT( reinit() ) );
 
@@ -205,11 +205,9 @@ public:
     }
 
 signals:
-    void statusChanged(const QString);
     void sliceChanged(int val);
 
 public slots:
-    void changeStatus(const QString s) {emit statusChanged(s);}
 
     void reinit() // when image has changed
     {
@@ -287,9 +285,11 @@ public:
 
 signals:
     void statusChanged(const QString);
+    void seedSelected();
 
 public slots:
     void changeStatus(const QString s) {emit statusChanged(s);}
+    void selectSeed() {emit seedSelected();}
 
     void updateSliceVisibility()
     {
@@ -353,7 +353,6 @@ private:
     ImageView* setupImageView(const unsigned int area)
     {
         ImageView* iv=new ImageView(this,img,area);
-        connect(iv, SIGNAL(statusChanged(const QString)), this, SLOT(changeStatus(const QString)));
 
         QString areatext[3]={QString("ZY"),QString("XZ"),QString("XY")};
         showViewAct[area] = new QAction(tr("&Show ")+areatext[area], this);

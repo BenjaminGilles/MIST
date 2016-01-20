@@ -22,28 +22,29 @@ class image
 {
 public:
     enum Selection { IMAGE, GRADX, GRADY, GRADZ, GRADNORM, DISPX, DISPY, FFTZ };
-
+    
     CImg<T> img;
-
+    
     CImg<bool> roi;
-
+    
     real voxelSize[3];
     unsigned int dim[3];
     int coord[3]; // 3D coordinates corresponding to mouse position
     int slice[3]; // current slices of the mpr visualisation
     unsigned int viewBB[2][3]; // bounding box of the zoomed region
     unsigned int dimBB[3]; // dimension of zoomed region
-    int seed[3]; // 3D coordinates corresponding to seed position for region growing
+    int seed[4]; // 3D coordinates corresponding to seed position for region growing + area (for 2D region growing)
     int brushSize;
     T intensityRange[2];
-
+    
     CImg<unsigned char> label;
     std::vector<std::string> labelName;
     CImg<unsigned char> palette;
-
+    
     image()
     {
         for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=seed[i]=0; voxelSize[i]=1.; }
+        seed[3]=2;
         labelName.resize(256); for(unsigned int i=0;i<labelName.size();++i) { std::stringstream ss; ss<<i; labelName[i]=std::string("label ")+ss.str(); }
         CImg<int> tmp(labelName.size(),1,1,3,1);
         for(unsigned int i=0;i<labelName.size();++i) tmp(i)=(i+ i*25) % 359;
@@ -52,12 +53,12 @@ public:
         brushSize=10;
         intensityRange[0]=intensityRange[1]=0;
     }
-
+    
     ~image()
     {
-
+        
     }
-
+    
     bool loadImage(const char* filename)
     {
         if(fopen(filename, "r")==NULL) return false;
@@ -77,38 +78,39 @@ public:
             for(unsigned int i=0;i<3;i++) voxelSize[i]=(real)voxsize[i];
         }
         else img.load(file.c_str());
-
+        
         if(img.is_empty()) return false;
-
+        
         dim[0]=img.width(); dim[1]=img.height(); dim[2]=img.depth();
         for(unsigned int i=0;i<3;++i)     {   slice[i]=coord[i]=seed[i]=dim[i]/2;  }
+        seed[3]=2;
         resetViewBB();
-
+        
         roi.resize(dim[0],dim[1],dim[2],1); roi.fill(0);
         if((int)dim[0]!=label.width() || (int)dim[1]!=label.height() || (int)dim[2]!=label.depth()) {label.resize(dim[0],dim[1],dim[2],1); label.fill(0); }
-
+        
         intensityRange[0]=img.min();
         intensityRange[1]=img.max();
-
+        
         qDebug()<<"dim:"<<dim[0]<<","<<dim[1]<<","<<dim[2];
         qDebug()<<"voxelSize:"<<voxelSize[0]<<","<<voxelSize[1]<<","<<voxelSize[2];
-
+        
         return true;
     }
-
+    
     bool loadLabel(const char* filename)
     {
         if(img.is_empty()) return false;
         if(fopen(filename, "r")==NULL) return false;
-
+        
         std::string file(filename);
         if (file.find(".hdr")!=std::string::npos)             label.load_analyze(filename);
         else if (file.find(".raw")!=std::string::npos)             label.load_raw(filename,dim[0],dim[1],dim[2]);
         else return false;
-
+        
         if(label.is_empty()) return false; else return true;
     }
-
+    
     bool saveLabel(const char* filename)
     {
         if(label.is_empty()) return false;
@@ -118,7 +120,7 @@ public:
         else return false;
         return true;
     }
-
+    
     bool loadNames(const char* filename)
     {
         if(fopen(filename, "r")==NULL) return false;
@@ -133,7 +135,7 @@ public:
         }
         else return false;
     }
-
+    
     bool saveNames(const char* filename)
     {
         std::string nameFile(filename);
@@ -146,21 +148,21 @@ public:
         }
         else return false;
     }
-
+    
     void getPlaneDirections(int dir[2],const unsigned int area)
     {
         if(area==0)      {dir[0]=2; dir[1]=1; } // ZY
         else if(area==1) {dir[0]=0; dir[1]=2; } // XZ
         else if(area==2) {dir[0]=0; dir[1]=1; } // XY
     }
-
+    
     void getIntensityRangeLimits(T& _min,T& _max)
     {
         if(img.is_empty()) return;
         _min = img.min();
         _max = img.max();
     }
-
+    
     CImg<unsigned char> getEmptyCutplane(const unsigned int area)
     {
         // initialize an image to be used for overlay (4 channels RGBA)
@@ -170,42 +172,42 @@ public:
         im.fill(0);
         return im;
     }
-
+    
     CImg<unsigned char> getCutplane(const unsigned int area)
     {
         if(img.is_empty()) return CImg<unsigned char>();
-
+        
         int P[3],dir[2]; getPlaneDirections(dir,area);
         CImg<T> p(dimBB[dir[0]],dimBB[dir[1]],1,3);
+        P[area]=slice[area];
         cimg_forXY(p,x,y)
         {
             P[dir[0]]=x+viewBB[0][dir[0]];
             P[dir[1]]=y+viewBB[0][dir[1]];
-            P[area]=slice[area];
             p(x,y,0,0)=p(x,y,0,1)=p(x,y,0,2)=img(P[0],P[1],P[2]);
         }
         CImg<unsigned char> r=p.get_cut(intensityRange[0],intensityRange[1]).normalize(0,255);
         return r;
     }
-
+    
     void overlayLabels(CImg<unsigned char>& cutplane,const unsigned int area, const double opacity=0.2, const bool borderOnly=true,const double roiopacity=0.2)
     {
         if(label.is_empty()) return;
         if(roi.is_empty()) return;
         if(opacity==0) return;
-
+        
         int P[3],dir[2]; getPlaneDirections(dir,area);
         CImg<unsigned char> l(dimBB[dir[0]],dimBB[dir[1]]); l.fill(0);
         CImg<bool> r(dimBB[dir[0]],dimBB[dir[1]]); r.fill(0);
+        P[area]=slice[area];
         cimg_forXY(l,x,y)
         {
             P[dir[0]]=x+viewBB[0][dir[0]];
             P[dir[1]]=y+viewBB[0][dir[1]];
-            P[area]=slice[area];
             l(x,y)=label(P[0],P[1],P[2]);
             r(x,y)=roi(P[0],P[1],P[2]);
         }
-
+        
         if(borderOnly)
         {
             CImg<> tmp=l;
@@ -216,13 +218,13 @@ public:
                     //if(Ipp==Icc && Inp==Icc && Ipn==Icc && Inn==Icc)
                     tmp(x,y)=0;
             l=tmp;
-
+            
         }
         //blend
         cimg_forXY(l,x,y) if(r(x,y))      cimg_forC(cutplane,c) cutplane(x,y,0,c) = (1.-roiopacity)*cutplane(x,y,0,c)+roiopacity*ROICOLOR[c];
         else if(l(x,y)) cimg_forC(cutplane,c) cutplane(x,y,0,c) = (1.-opacity)*cutplane(x,y,0,c)+opacity*palette(l(x,y),0,0,c);
     }
-
+    
     void overlaySliceTrace(CImg<unsigned char>& cutplane,const unsigned int area, const unsigned int axis)
     {
         int dir[2]; getPlaneDirections(dir,area);
@@ -230,14 +232,14 @@ public:
         if(axis==0) cutplane.draw_line(x,0,0,x,cutplane.height()-1,0,LINECOLORS[dir[axis]]);
         else cutplane.draw_line(0,x,0,cutplane.width()-1,x,0,LINECOLORS[dir[axis]]);
     }
-
+    
     void overlayBrush(CImg<unsigned char>& cutplane,const unsigned int area)
     {
         int dir[2]; getPlaneDirections(dir,area);
         int x=coord[dir[0]]-viewBB[0][dir[0]],y=coord[dir[1]]-viewBB[0][dir[1]];
         cutplane.draw_circle(x,y,brushSize,BRUSHCOLOR,1.0f,~0U);
     }
-
+    
     void overlaySeed(CImg<unsigned char>& cutplane,const unsigned int area,const unsigned int size=2)
     {
         if(seed[area]!=slice[area]) return;
@@ -248,8 +250,8 @@ public:
                 .draw_line(x,y-size,0,x,y-1,0,SEEDCOLOR)
                 .draw_line(x,y+1,0,x,y+size,0,SEEDCOLOR);
     }
-
-
+    
+    
     void selectBrush(const unsigned int area,const bool add)
     {
         int dir[2]; getPlaneDirections(dir,area);
@@ -267,11 +269,91 @@ public:
             roi(P[0],P[1],P[2])=add;
         }
     }
-
-    void selectSeed()
+    
+    void selectSeed(const unsigned int area)
     {
         for(unsigned int i=0;i<3;++i)  seed[i]=coord[i];
+        seed[3]=area;
     }
+
+
+    //,const CImgList<unsigned int> &separationPoints,const unsigned int separationLinkTol2
+    void regionGrowing(const T range[2],  const bool inLabel,const bool connected,const bool is2D)
+    {
+        if(label.is_empty()) return;
+        if(roi.is_empty()) return;
+
+        if(is2D)
+        {
+            if(img(seed[0],seed[1],seed[2])<=range[1] && img(seed[0],seed[1],seed[2])>=range[0])
+            {
+                int P[3],dir[2]; getPlaneDirections(dir,seed[3]);
+                P[seed[3]]=slice[seed[3]];
+                CImg<T> c_img(dim[dir[0]],dim[dir[1]]);
+                CImg<unsigned char> c_label(dim[dir[0]],dim[dir[1]]);
+                CImg<bool> c_roi(dim[dir[0]],dim[dir[1]]); c_roi.fill(false);
+
+                cimg_forXY(c_img,x,y)
+                {
+                    P[dir[0]]=x;
+                    P[dir[1]]=y;
+                    c_img(x,y)=img(P[0],P[1],P[2]);
+                    c_label(x,y)=label(P[0],P[1],P[2]);
+                }
+                if(inLabel)
+                {
+                    T lab=(int)label(seed[0],seed[1],seed[2]);
+                    cimg_forXY(c_img,x,y) if(c_label(x,y)==lab) if(c_img(x,y)<=range[1] && c_img(x,y)>=range[0]) c_roi(x,y)=true;
+                }
+                else
+                {
+                    cimg_forXY(c_img,x,y) if(c_img(x,y)<=range[1] && c_img(x,y)>=range[0]) c_roi(x,y)=true;
+                }
+                if(connected)
+                {
+                    bool tru=true;
+                    (+c_roi).draw_fill(seed[dir[0]],seed[dir[1]],0,&tru,1.0f,c_roi,0);
+                }
+                // paste
+                cimg_forXY(c_roi,x,y)
+                {
+                    P[dir[0]]=x;
+                    P[dir[1]]=y;
+                    roi(P[0],P[1],P[2])=c_roi(x,y);
+                }
+
+                //                CImg<bool> sepImg=get_plane(separationPoints,seed,seed[3],BB,separationLinkTol2);
+                //                if(seed[3]==1)      {  cimg_forXY(sepImg,z,y) if(sepImg(z,y)) pselect(z,y,0)=false; (+pselect).draw_fill(seed[2],seed[1],0,&white,1.0f,pselect,0); }
+                //                else if(seed[3]==2) {  cimg_forXY(sepImg,x,z) if(sepImg(x,z)) pselect(x,z,0)=false; (+pselect).draw_fill(seed[0],seed[2],0,&white,1.0f,pselect,0); }
+                //                else if(seed[3]==3) {  cimg_forXY(sepImg,x,y) if(sepImg(x,y)) pselect(x,y,0)=false; (+pselect).draw_fill(seed[0],seed[1],0,&white,1.0f,pselect,0); }
+            }
+        }
+        else
+        {
+            roi.fill(false);
+            if(img(seed[0],seed[1],seed[2])<=range[1] && img(seed[0],seed[1],seed[2])>=range[0])
+            {
+                // todo: openmp ?
+                if(inLabel)
+                {
+                    T lab=(int)label(seed[0],seed[1],seed[2]);
+                    cimg_forXYZ(img,x,y,z) if(label(x,y,z)==lab) if(img(x,y,z)<=range[1] && img(x,y,z)>=range[0]) roi(x,y,z)=true;
+                }
+                else
+                {
+                    cimg_forXYZ(img,x,y,z) if(img(x,y,z)<=range[1] && img(x,y,z)>=range[0]) roi(x,y,z)=true;
+                }
+                if(connected)
+                {
+                    bool tru=true;
+                    (+roi).draw_fill(seed[0],seed[1],seed[2],&tru,1.0f,roi,0);
+                }
+            }
+        }
+
+    }
+
+
 
     void clearRoi()
     {

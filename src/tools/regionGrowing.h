@@ -11,10 +11,14 @@ class regionGrowingTool:public baseTool
     Q_OBJECT
 
 public:
-    regionGrowingTool(MPRImageView* v,image<T>* i):baseTool(v,i),rangew(NULL)  {}
+    regionGrowingTool(MPRImageView* v,image<T>* i):baseTool(v,i),rangew(NULL),is2D(true),inLabel(true),connected(true)
+    {
+        range[0]=range[1]=0;
+        connect(mprview, SIGNAL(seedSelected()), this, SLOT(update()));
+    }
     ~regionGrowingTool()
     {
-        if(rangew!=NULL) delete rangew;
+            if(rangew!=NULL) delete rangew;
     }
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
@@ -22,25 +26,25 @@ public:
         rangew = new QRangeWidget(parent);
         connect(rangew, SIGNAL( rangeChanged(int,int) ), this, SLOT( changeRange(int,int) ) );
 
-        QPushButton* switchDimAct = new QPushButton(tr("2D"), parent);
-        switchDimAct->setStatusTip(tr("Restrict growing to 2D"));
-        switchDimAct->setCheckable(true);
-        switchDimAct->setChecked(true);
-        connect(switchDimAct, SIGNAL(toggled(bool)),this, SLOT(switchDim(bool)));
-        QPushButton* InLabelAct = new QPushButton(tr("Inside labels"), parent);
-        InLabelAct->setStatusTip(tr("Restrict growing to labels"));
+        QPushButton* is2DAct = new QPushButton(tr("2D"), parent);
+        is2DAct->setStatusTip(tr("Restrict growing to 2D"));
+        is2DAct->setCheckable(true);
+        is2DAct->setChecked(is2D);
+        connect(is2DAct, SIGNAL(toggled(bool)),this, SLOT(Is2D(bool)));
+        QPushButton* InLabelAct = new QPushButton(tr("Inside label"), parent);
+        InLabelAct->setStatusTip(tr("Restrict growing to label"));
         InLabelAct->setCheckable(true);
-        InLabelAct->setChecked(true);
+        InLabelAct->setChecked(inLabel);
         connect(InLabelAct, SIGNAL(toggled(bool)),this, SLOT(InLabel(bool)));
         QPushButton* ConnectedAct = new QPushButton(tr("Connected"), parent);
         ConnectedAct->setStatusTip(tr("Enforce connectivity"));
         ConnectedAct->setCheckable(true);
-        ConnectedAct->setChecked(true);
+        ConnectedAct->setChecked(connected);
         connect(ConnectedAct, SIGNAL(toggled(bool)),this, SLOT(Connected(bool)));
 
         QVBoxLayout *layout = new QVBoxLayout();
         layout->addWidget(rangew);
-        layout->addWidget(switchDimAct);
+        layout->addWidget(is2DAct);
         layout->addWidget(InLabelAct);
         layout->addWidget(ConnectedAct);
         layout->addStretch();
@@ -59,34 +63,49 @@ public slots:
 
     void reinit()
     {
-        T _min=0,_max=0;
-        img->getIntensityRangeLimits(_min,_max);
-        rangew->setRangeLimits((int)floor((double)_min), (int)ceil((double)_max));
+        img->getIntensityRangeLimits(range[0],range[1]);
+        rangew->setRangeLimits((int)floor((double)range[0]), (int)ceil((double)range[1]));
     }
 
     void changeRange(int _min, int _max)
     {
-//        img->intensityRange[0]=(T)_min;
-//        img->intensityRange[1]=(T)_max;
-//        mprview->Render(true);
+        range[0]=(T)_min;
+        range[1]=(T)_max;
+        update();
     }
 
-    void switchDim(bool val)
+    void Is2D(bool val)
     {
+        is2D=val;
+        update();
     }
 
     void InLabel(bool val)
     {
+        inLabel=val;
+        update();
     }
 
     void Connected(bool val)
     {
+        connected=val;
+        update();
     }
 
 
+    void update()
+    {
+        img->regionGrowing(range,inLabel,connected,is2D);
+        mprview->Render(true);
+    }
 
 private:
     QRangeWidget *rangew ;
+
+    T range[2];
+    bool is2D;
+    bool inLabel;
+    bool connected;
 
 };
 

@@ -169,8 +169,8 @@ void GraphView::mousePressEvent(QMouseEvent *mouseEvent)
     }
     else if(mode==RegionGrowing && pressed==Qt::LeftButton && !pressedModifiers)
     {
-        img->selectSeed();
-        emit renderAll();
+        img->selectSeed(area);
+        emit seedSelected();
     }
 }
 
