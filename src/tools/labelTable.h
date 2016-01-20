@@ -36,17 +36,16 @@ public:
         opacitySlider->setRange(0,100);
         opacitySlider->setValue(50);
         connect(opacitySlider, SIGNAL( valueChanged(int) ), this, SLOT( changeOpacity(int) ) );
-        QPushButton *borderCheck = new QPushButton("Plain");
-        borderCheck->setCheckable(true);
-        connect(borderCheck, SIGNAL( toggled (bool) ), this, SLOT( changePlainVisu(bool) ) );
-        QHBoxLayout *opl = new QHBoxLayout();
-        opl->setMargin(0);
-        opl->setSpacing(2);
-        opl->addWidget(opacityLabel);
-        opl->addWidget(opacitySlider);
-        opl->addWidget(borderCheck);
-        QWidget *opw = new QWidget(parent);
-        opw->setLayout(opl);
+
+        QAction *borderAct = new QAction(QIcon(":plain"),tr("Plain/Boundary"), parent);
+        borderAct->setCheckable(true);
+        borderAct->setStatusTip(tr("Switch between plain/boundary visualization"));
+        connect(borderAct, SIGNAL( toggled (bool) ), this, SLOT( changePlainVisu(bool) ) );
+
+        QToolBar* ToolBarOpacity=new QToolBar(parent);
+        ToolBarOpacity->addWidget(opacityLabel);
+        ToolBarOpacity->addWidget(opacitySlider);
+        ToolBarOpacity->addAction(borderAct);
 
         table=new QTableWidget(0,2,parent);
         table->setColumnWidth ( 0, 30);
@@ -56,13 +55,13 @@ public:
         connect(table, SIGNAL( cellDoubleClicked (int,int) ), this, SLOT( cellDoubleClicked(int,int) ) );
         updateTable();
 
-        QAction* SelectLabelAct = new QAction(tr("Select"), parent);
+        QAction* SelectLabelAct = new QAction(QIcon(":select"),tr("Select"), parent);
         SelectLabelAct->setStatusTip(tr("Select Label"));
         connect(SelectLabelAct, SIGNAL(triggered()),this, SLOT(SelectLabel()));
-        QAction* AddLabelAct = new QAction(tr("+"), parent);
+        QAction* AddLabelAct = new QAction(QIcon(":add"),tr("+"), parent);
         AddLabelAct->setStatusTip(tr("Add ROI to Label"));
         connect(AddLabelAct, SIGNAL(triggered()),this, SLOT(AddLabel()));
-        QAction* DelLabelAct = new QAction(tr("-"), parent);
+        QAction* DelLabelAct = new QAction(QIcon(":remove"),tr("-"), parent);
         DelLabelAct->setStatusTip(tr("Remove ROI from Label"));
         connect(DelLabelAct, SIGNAL(triggered()),this, SLOT(DelLabel()));
 
@@ -75,7 +74,7 @@ public:
         ToolBar->addActions(GeometryGroup->actions());
 
         QVBoxLayout *layout = new QVBoxLayout();
-        layout->addWidget(opw);
+        layout->addWidget(ToolBarOpacity);
         layout->addWidget(table);
         layout->addWidget(ToolBar);
 

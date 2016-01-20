@@ -211,6 +211,10 @@ public:
     }
 
 
+    void undo()
+    {
+
+    }
 
     void getPlaneDirections(int dir[2],const unsigned int area)
     {

@@ -28,6 +28,8 @@ public slots:
     void loadSegmentation();
     void saveSegmentation();
     void saveAsSegmentation();
+    void undo();
+
     void changeStatus(const QString);
 
     void reinit();
@@ -49,6 +51,7 @@ private:
     MPRImageView* mprview;
 
     QMenu *fileMenu;
+    QMenu *editMenu;
     QMenu *viewMenu;
     QMenu *helpMenu;
 
@@ -61,6 +64,7 @@ private:
     QAction *saveLabAct;
     QAction *aboutAct;
     QAction *quitAct;
+    QAction *undoAct;
 };
 
 #endif // MAINWINDOW_H

@@ -28,6 +28,7 @@ MainWindow::~MainWindow()
     delete marchingCubes;
 
     delete fileMenu;
+    delete editMenu;
     delete viewMenu;
     delete helpMenu;
 
@@ -40,42 +41,43 @@ MainWindow::~MainWindow()
     delete saveLabAsAct;
     delete aboutAct;
     delete quitAct;
+    delete undoAct;
 }
 
 
 void MainWindow::setup(const QString filename)
 {
-    aboutAct = new QAction(tr("&About"), this);
-    aboutAct->setStatusTip(tr("Show About box"));
-    connect(aboutAct, SIGNAL(triggered()), this, SLOT(about()));
+    //    style()->standardIcon(QStyle::SP_DirOpenIcon);
+    //    QIcon::fromTheme("document-open")
+    //    icons from http://www.iconarchive.com/show/outline-icons-by-iconsmind.html
 
-    quitAct = new QAction(tr("&Quit"), this);
-    quitAct->setShortcuts(QKeySequence::Quit);
-    quitAct->setStatusTip(tr("Quit the application"));
-    connect(quitAct, SIGNAL(triggered()), this, SLOT(close()));
-
-    openAct = new QAction(style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open image..."), this);
+    openAct = new QAction(QIcon(":openimg")  , tr("&Open image..."), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open image"));
     connect(openAct, SIGNAL(triggered()), this, SLOT(load()));
 
-    saveAsAct = new QAction(style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save image as..."), this);
+    saveAsAct = new QAction(QIcon(":save"), tr("&Save image as..."), this);
     saveAsAct->setStatusTip(tr("Save image as"));
     connect(saveAsAct, SIGNAL(triggered()), this, SLOT(saveAs()));
 
-    openLabAct = new QAction(style()->standardIcon(QStyle::SP_DirOpenIcon), tr("&Open segmentation..."), this);
+    openLabAct = new QAction(QIcon(":opensegm"), tr("&Open segmentation..."), this);
     openLabAct->setStatusTip(tr("Open segmentation"));
     connect(openLabAct, SIGNAL(triggered()), this, SLOT(loadSegmentation()));
 
-    saveLabAct = new QAction(style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save segmentation"), this);
+    saveLabAct = new QAction(QIcon(":save"), tr("&Save segmentation"), this);
     saveLabAct->setShortcut(QKeySequence::Save);
     saveLabAct->setStatusTip(tr("Save segmentation"));
     connect(saveLabAct, SIGNAL(triggered()), this, SLOT(saveSegmentation()));
 
-    saveLabAsAct = new QAction(style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save segmentation as..."), this);
+    saveLabAsAct = new QAction(QIcon(":save"), tr("&Save segmentation as..."), this);
     saveLabAsAct->setShortcut(QKeySequence::SaveAs);
     saveLabAsAct->setStatusTip(tr("Save segmentation as"));
     connect(saveLabAsAct, SIGNAL(triggered()), this, SLOT(saveAsSegmentation()));
+
+    quitAct = new QAction(QIcon(":quit"),tr("&Quit"), this);
+    quitAct->setShortcuts(QKeySequence::Quit);
+    quitAct->setStatusTip(tr("Quit the application"));
+    connect(quitAct, SIGNAL(triggered()), this, SLOT(close()));
 
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
@@ -87,9 +89,21 @@ void MainWindow::setup(const QString filename)
     fileMenu->addSeparator();
     fileMenu->addAction(quitAct);
 
+    undoAct = new QAction(QIcon(":undo"), tr("&Undo last segmentation change"), this);
+    undoAct->setShortcut(QKeySequence::Undo);
+    undoAct->setStatusTip(tr("Undo last segmentation change"));
+    connect(undoAct, SIGNAL(triggered()), this, SLOT(undo()));
+
+    editMenu = menuBar()->addMenu(tr("&Edit"));
+    editMenu->addAction(undoAct);
+
     viewMenu = menuBar()->addMenu(tr("&View"));
 
     menuBar()->addSeparator();
+
+    aboutAct = new QAction(QIcon(":help"),tr("&About"), this);
+    aboutAct->setStatusTip(tr("Show About box"));
+    connect(aboutAct, SIGNAL(triggered()), this, SLOT(about()));
 
     helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(aboutAct);
@@ -98,6 +112,7 @@ void MainWindow::setup(const QString filename)
     toolBar->addAction(openAct);
     toolBar->addAction(openLabAct);
     toolBar->addAction(saveLabAct);
+    toolBar->addAction(undoAct);
 
     mprview = new MPRImageView(this,&img);
     connect(mprview, SIGNAL(statusChanged(const QString)), this, SLOT(changeStatus(const QString)));
@@ -163,10 +178,19 @@ QGroupBox *MainWindow::createTools()
     QGroupBox *groupBox = new QGroupBox(tr("Tools"));
 
     QTabWidget* tab = new QTabWidget(this);
-    tab->addTab(morpho->getMenu(),tr("Morpho"));
-    tab->addTab(brush->getMenu(),tr("Brush"));
-    tab->addTab(regionGrowing->getMenu(),tr("Region Growing"));
-    tab->addTab(marchingCubes->getMenu(),tr("Mesh Tools"));
+    tab->setIconSize(QSize(30,30));
+    tab->addTab(morpho->getMenu(),tr(""));
+    tab->setTabIcon(0,QIcon(":morpho"));
+    tab->setTabToolTip(1,tr("Morphological operators"));
+    tab->addTab(brush->getMenu(),tr(""));
+    tab->setTabIcon(1,QIcon(":brush"));
+    tab->setTabToolTip(1,tr("Brush tool"));
+    tab->addTab(regionGrowing->getMenu(),tr(""));
+    tab->setTabIcon(2,QIcon(":regionGrow"));
+    tab->setTabToolTip(2,tr("Region growing"));
+    tab->addTab(marchingCubes->getMenu(),tr(""));
+    tab->setTabIcon(3,QIcon(":mesh"));
+    tab->setTabToolTip(3,tr("Mesh tools"));
     connect(tab, SIGNAL(currentChanged(int)),this, SLOT(ToolChanged(int)));
 
     QVBoxLayout *layout = new QVBoxLayout();
@@ -299,6 +323,11 @@ void MainWindow::saveSegmentation()
 
 }
 
+void MainWindow::undo()
+{
+    img.undo();
+    mprview->Render(true);
+}
 
 void MainWindow::changeStatus(const QString m)
 {

@@ -11,7 +11,7 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     imageview.cpp \
     widgets/mprlayout.cpp \
-    widgets/qSlice.cpp \
+    widgets/qSlice.cpp
 
 HEADERS  += mainwindow.h\
         $$CIMG_PATH/CImg.h \
@@ -28,7 +28,9 @@ HEADERS  += mainwindow.h\
     tools/regionGrowing.h \
     tools/marchingCubes.h
 
-INCLUDEPATH += $$CIMG_PATH \
+INCLUDEPATH += $$CIMG_PATH
+
+RESOURCES += ressources.qrc
 
 #LIBS += -L/usr/X11R6/lib -lm -lpthread
 

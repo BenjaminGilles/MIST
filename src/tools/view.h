@@ -3,7 +3,7 @@
 
 #include <tools/baseTool.h>
 #include <QGroupBox>
-#include <QPushButton>
+#include <QToolBar>
 #include <QHBoxLayout>
 #include <widgets/qSlice.h>
 
@@ -12,10 +12,10 @@ class viewTool:public baseTool
     Q_OBJECT
 
 public:
-    viewTool(MPRImageView* v,image<T>* i):baseTool(v,i),zoom(NULL),oldViewMode(GraphView::Navigation),rangew(NULL)  {}
+    viewTool(MPRImageView* v,image<T>* i):baseTool(v,i),zoomAct(NULL),oldViewMode(GraphView::Navigation),rangew(NULL)  {}
     ~viewTool()
     {
-        if(zoom!=NULL) delete zoom;
+        if(zoomAct!=NULL) delete zoomAct;
         if(rangew!=NULL) delete rangew;
     }
 
@@ -26,28 +26,31 @@ public:
         rangew = new QRangeWidget(parent);
         connect(rangew, SIGNAL( rangeChanged(int,int) ), this, SLOT( changeRange(int,int) ) );
 
-        zoom = new QPushButton("Zoom");
-        zoom->setCheckable(true);
-        connect(zoom, SIGNAL( toggled (bool) ), this, SLOT( setZoom(bool) ) );
+        zoomAct = new QAction(QIcon(":resize"),tr("Zoom in"), parent);
+        zoomAct->setCheckable(true);
+        zoomAct->setStatusTip(tr("Select a region to zoom in"));
+        connect(zoomAct, SIGNAL( toggled (bool) ), this, SLOT( setZoom(bool) ) );
         for(unsigned int i=0;i<3;++i) connect(mprview->view[i]->graphView, SIGNAL( selectionDone () ), this, SLOT( switchOffzoom() ) );
-        QPushButton* zoombut = new QPushButton("Reset");
-//        zoombut->setMaximumWidth(20);
-        connect(zoombut, SIGNAL( pressed () ), this, SLOT( zoomReset() ) );
-        QPushButton* cropbut = new QPushButton("Crop");
-//        cropbut->setMaximumWidth(20);
-        connect(cropbut, SIGNAL( pressed () ), this, SLOT( crop() ) );
-        QHBoxLayout *zooml = new QHBoxLayout();
-        zooml->setMargin(0);
-        zooml->setSpacing(2);
-        zooml->addWidget(zoom);
-        zooml->addWidget(zoombut);
-        zooml->addWidget(cropbut);
-        QWidget *zoomw = new QWidget(parent);
-        zoomw->setLayout(zooml);
+
+        QAction* resetAct = new QAction(QIcon(":resetZoom"),tr("Reset zoom"), parent);
+        resetAct->setStatusTip(tr("Reset zoom"));
+        connect(resetAct, SIGNAL(triggered()),this, SLOT(zoomReset()));
+
+        QAction* cropAct = new QAction(QIcon(":crop"),tr("Crop image"), parent);
+        cropAct->setStatusTip(tr("Crop image according to zoomed region"));
+        connect(cropAct, SIGNAL(triggered()),this, SLOT(crop()));
+
+        QActionGroup* GeometryGroup = new QActionGroup(parent);
+        GeometryGroup->addAction(zoomAct);
+        GeometryGroup->addAction(resetAct);
+        GeometryGroup->addAction(cropAct);
+
+        QToolBar* ToolBar=new QToolBar(parent);
+        ToolBar->addActions(GeometryGroup->actions());
 
         QVBoxLayout *layout = new QVBoxLayout();
         layout->addWidget(rangew);
-        layout->addWidget(zoomw);
+        layout->addWidget(ToolBar);
 
         groupBox->setLayout(layout);
         return groupBox;
@@ -56,8 +59,7 @@ public:
 
 public slots:
 
-    void switchOffzoom()    { zoom->setChecked(false);    }
-
+    void switchOffzoom()    { zoomAct->setChecked(false);    }
 
     void setZoom(bool s)
     {
@@ -93,7 +95,7 @@ public slots:
 
 private:
 
-    QPushButton *zoom;
+    QAction *zoomAct;
     GraphView::Mode oldViewMode;
     QRangeWidget *rangew ;
 
