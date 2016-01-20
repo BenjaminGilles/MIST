@@ -30,14 +30,18 @@ public:
         zoom->setCheckable(true);
         connect(zoom, SIGNAL( toggled (bool) ), this, SLOT( setZoom(bool) ) );
         for(unsigned int i=0;i<3;++i) connect(mprview->view[i]->graphView, SIGNAL( selectionDone () ), this, SLOT( switchOffzoom() ) );
-        QPushButton* zoombut = new QPushButton("R");
-        zoombut->setMaximumWidth(20);
+        QPushButton* zoombut = new QPushButton("Reset");
+//        zoombut->setMaximumWidth(20);
         connect(zoombut, SIGNAL( pressed () ), this, SLOT( zoomReset() ) );
+        QPushButton* cropbut = new QPushButton("Crop");
+//        cropbut->setMaximumWidth(20);
+        connect(cropbut, SIGNAL( pressed () ), this, SLOT( crop() ) );
         QHBoxLayout *zooml = new QHBoxLayout();
         zooml->setMargin(0);
         zooml->setSpacing(2);
         zooml->addWidget(zoom);
         zooml->addWidget(zoombut);
+        zooml->addWidget(cropbut);
         QWidget *zoomw = new QWidget(parent);
         zoomw->setLayout(zooml);
 
@@ -64,6 +68,12 @@ public slots:
     void zoomReset()
     {
         img->resetViewBB();
+        mprview->reinit();
+    }
+
+    void crop()
+    {
+        img->crop();
         mprview->reinit();
     }
 

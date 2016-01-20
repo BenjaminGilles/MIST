@@ -121,7 +121,7 @@ public slots:
         }
     }
 
-    void cellClicked(int r,int c)
+    void cellClicked(int /*r*/,int /*c*/)
     {
     }
 

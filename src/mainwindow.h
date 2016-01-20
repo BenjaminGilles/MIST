@@ -24,8 +24,10 @@ public:
 public slots:
     void about();
     void load();
+    void saveAs();
     void loadSegmentation();
     void saveSegmentation();
+    void saveAsSegmentation();
     void changeStatus(const QString);
 
     void reinit();
@@ -53,8 +55,10 @@ private:
     QToolBar *toolBar;
 
     QAction *openAct;
+    QAction *saveAsAct;
     QAction *openLabAct;
-    QAction *saveAct;
+    QAction *saveLabAsAct;
+    QAction *saveLabAct;
     QAction *aboutAct;
     QAction *quitAct;
 };

@@ -41,25 +41,32 @@ GraphView::GraphView(QWidget * parent ,image<T>* v,const unsigned int a)
 
 void GraphView::keyPressEvent(QKeyEvent *event)
 {
+    event->modifiers();
+
     QGraphicsView::keyPressEvent(event);
-    switch (event->key())
-    {
-    case Qt::Key_Up:    { int dp[2]={0,-1}; img->moveViewBB(dp,area); emit selectionDone(); } break;
-    case Qt::Key_Down:  { int dp[2]={0,1};  img->moveViewBB(dp,area); emit selectionDone(); } break;
-    case Qt::Key_Left:  { int dp[2]={-1,0}; img->moveViewBB(dp,area); emit selectionDone(); } break;
-    case Qt::Key_Right: { int dp[2]={1,0}; img->moveViewBB(dp,area);  emit selectionDone(); } break;
-    case Qt::Key_PageUp:
-    case Qt::Key_PageDown:
-    {
-        int incr=event->key()==Qt::Key_PageUp?1:-1;
-        if(setSlice(img->slice[area]+incr))
+
+    if(!event->modifiers())
+        switch (event->key())
+        {
+        case Qt::Key_Up:    { int dp[2]={0,-1}; img->moveViewBB(dp,area); emit selectionDone(); } break;
+        case Qt::Key_Down:  { int dp[2]={0,1};  img->moveViewBB(dp,area); emit selectionDone(); } break;
+        case Qt::Key_Left:  { int dp[2]={-1,0}; img->moveViewBB(dp,area); emit selectionDone(); } break;
+        case Qt::Key_Right: { int dp[2]={1,0}; img->moveViewBB(dp,area);  emit selectionDone(); } break;
+        }
+
+    if(event->key()==Qt::Key_PageUp || (event->key()==Qt::Key_Up && event->modifiers().testFlag(Qt::ShiftModifier)))
+        if(setSlice(img->slice[area]+1))
         {
             emit sliceChanged(img->slice[area]);
         }
-    } break;
-        //    case Qt::Key_Minus:    this->scale(1./1.2,1./1.2);       break;
-        //    case Qt::Key_Equal:    fitinview ();         break;
-    }
+    if(event->key()==Qt::Key_PageDown || (event->key()==Qt::Key_Down && event->modifiers().testFlag(Qt::ShiftModifier)))
+        if(setSlice(img->slice[area]+1))
+        {
+            emit sliceChanged(img->slice[area]);
+        }
+
+    //    case Qt::Key_Minus:    this->scale(1./1.2,1./1.2);       break;
+    //    case Qt::Key_Equal:    fitinview ();         break;
 }
 
 
@@ -167,7 +174,7 @@ void GraphView::mousePressEvent(QMouseEvent *mouseEvent)
         img->selectBrush(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
         Render(true);
     }
-    else if(mode==RegionGrowing && pressed==Qt::LeftButton && !pressedModifiers)
+    else if(mode==RegionGrowing && pressed==Qt::LeftButton)
     {
         img->selectSeed(area);
         emit seedSelected();

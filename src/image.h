@@ -29,6 +29,9 @@ public:
     
     real voxelSize[3];
     unsigned int dim[3];
+    real translation[3];
+    real rotation[3][3];
+
     int coord[3]; // 3D coordinates corresponding to mouse position
     int slice[3]; // current slices of the mpr visualisation
     unsigned int viewBB[2][3]; // bounding box of the zoomed region
@@ -36,14 +39,18 @@ public:
     int seed[4]; // 3D coordinates corresponding to seed position for region growing + area (for 2D region growing)
     int brushSize;
     T intensityRange[2];
-    
+
     CImg<unsigned char> label;
     std::vector<std::string> labelName;
     CImg<unsigned char> palette;
-    
+
+    std::string imageFileName;
+    std::string labelFileName;
+
     image()
     {
-        for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=seed[i]=0; voxelSize[i]=1.; }
+        for(unsigned int i=0;i<3;++i)   for(unsigned int j=0;j<3;++j) rotation[i][j]=0;
+        for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=translation[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=seed[i]=0; voxelSize[i]=rotation[i][i]=1.; }
         seed[3]=2;
         labelName.resize(256); for(unsigned int i=0;i<labelName.size();++i) { std::stringstream ss; ss<<i; labelName[i]=std::string("label ")+ss.str(); }
         CImg<int> tmp(labelName.size(),1,1,3,1);
@@ -62,14 +69,16 @@ public:
     bool loadImage(const char* filename)
     {
         if(fopen(filename, "r")==NULL) return false;
+        for(unsigned int i=0;i<3;++i)   for(unsigned int j=0;j<3;++j) rotation[i][j]=0;
+        for(unsigned int i=0;i<3;++i)      { translation[i]=0; rotation[i][i]=1.; }
+
         std::string file(filename);
         if (file.find(".hdr")!=std::string::npos)        img.load_analyze(filename,voxelSize);
         else if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos
                 || file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)
         {
             if(file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"mhd");
-            real origin[3];
-            img=load_metaimage<T,real>(file.c_str(),voxelSize,origin)(0);
+            img=load_metaimage<T,real>(file.c_str(),voxelSize,translation,&(rotation[0][0]))(0);
         }
         else if (file.find(".inr")!=std::string::npos)
         {
@@ -91,10 +100,32 @@ public:
         
         intensityRange[0]=img.min();
         intensityRange[1]=img.max();
-        
+
+        imageFileName=std::string(filename);
+
         qDebug()<<"dim:"<<dim[0]<<","<<dim[1]<<","<<dim[2];
         qDebug()<<"voxelSize:"<<voxelSize[0]<<","<<voxelSize[1]<<","<<voxelSize[2];
-        
+        qDebug()<<"translation:"<<translation[0]<<","<<translation[1]<<","<<translation[2];
+        qDebug()<<"rotation:"<<rotation[0][0]<<","<<rotation[0][1]<<","<<rotation[0][2]<<","<<rotation[1][0]<<","<<rotation[1][1]<<","<<rotation[1][2]<<","<<rotation[2][0]<<","<<rotation[2][1]<<","<<rotation[2][2];
+        return true;
+    }
+
+
+    bool saveImage(const char* filename)
+    {
+        if(img.is_empty()) return false;
+
+        std::string file(filename);
+        if (file.find(".hdr")!=std::string::npos)        img.save_analyze(filename,voxelSize);
+        else if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos
+                || file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)
+        {
+            if(file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"mhd");
+            CImgList<T> l; l.push_back(img);
+            save_metaimage<T,real>(l,filename,voxelSize,translation,&(rotation[0][0]));
+        }
+
+        imageFileName=file;
         return true;
     }
     
@@ -105,19 +136,30 @@ public:
         
         std::string file(filename);
         if (file.find(".hdr")!=std::string::npos)             label.load_analyze(filename);
-        else if (file.find(".raw")!=std::string::npos)             label.load_raw(filename,dim[0],dim[1],dim[2]);
+        else if (file.find(".raw")!=std::string::npos)        label.load_raw(filename,dim[0],dim[1],dim[2]);
         else return false;
         
-        if(label.is_empty()) return false; else return true;
+        if(label.is_empty()) return false;
+        labelFileName=std::string(filename);
+
+        return true;
     }
     
     bool saveLabel(const char* filename)
     {
         if(label.is_empty()) return false;
+
         std::string file(filename);
-        if (file.find(".hdr")!=std::string::npos)             label.save_analyze(filename);
-        else if (file.find(".raw")!=std::string::npos)             label.save_raw(filename);
-        else return false;
+        if (file.find(".hdr")!=std::string::npos)        label.save_analyze(filename,voxelSize);
+        else if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos
+                || file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)
+        {
+            if(file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"mhd");
+            CImgList<unsigned char> l; l.push_back(label);
+            save_metaimage<unsigned char,real>(l,filename,voxelSize,translation,&(rotation[0][0]));
+        }
+
+        labelFileName=file;
         return true;
     }
     
@@ -149,6 +191,27 @@ public:
         else return false;
     }
     
+
+    void crop()
+    {
+        if(img.is_empty()) return;
+        img.crop(viewBB[0][0],viewBB[0][1],viewBB[0][2],viewBB[1][0],viewBB[1][1],viewBB[1][2]);
+        if(!label.is_empty()) label.crop(viewBB[0][0],viewBB[0][1],viewBB[0][2],viewBB[1][0],viewBB[1][1],viewBB[1][2]);
+        if(!roi.is_empty()) roi.crop(viewBB[0][0],viewBB[0][1],viewBB[0][2],viewBB[1][0],viewBB[1][1],viewBB[1][2]);
+
+        dim[0]=img.width(); dim[1]=img.height(); dim[2]=img.depth();
+
+        for(unsigned int i=0;i<3;++i) for(unsigned int j=0;j<3;j++) translation[i]+=rotation[i][j]*viewBB[0][j]*voxelSize[j];
+
+        for(unsigned int i=0;i<3;++i)     {   slice[i]-=viewBB[0][i]; coord[i]-=viewBB[0][i]; seed[i]-=viewBB[0][i];  }
+        resetViewBB();
+
+        intensityRange[0]=img.min();
+        intensityRange[1]=img.max();
+    }
+
+
+
     void getPlaneDirections(int dir[2],const unsigned int area)
     {
         if(area==0)      {dir[0]=2; dir[1]=1; } // ZY
@@ -288,7 +351,7 @@ public:
             if(img(seed[0],seed[1],seed[2])<=range[1] && img(seed[0],seed[1],seed[2])>=range[0])
             {
                 int P[3],dir[2]; getPlaneDirections(dir,seed[3]);
-                P[seed[3]]=slice[seed[3]];
+                P[seed[3]]=seed[seed[3]];
                 CImg<T> c_img(dim[dir[0]],dim[dir[1]]);
                 CImg<unsigned char> c_label(dim[dir[0]],dim[dir[1]]);
                 CImg<bool> c_roi(dim[dir[0]],dim[dir[1]]); c_roi.fill(false);

@@ -34,7 +34,10 @@ MainWindow::~MainWindow()
     delete toolBar;
 
     delete openAct;
+    delete saveAsAct;
     delete openLabAct;
+    delete saveLabAct;
+    delete saveLabAsAct;
     delete aboutAct;
     delete quitAct;
 }
@@ -51,24 +54,36 @@ void MainWindow::setup(const QString filename)
     quitAct->setStatusTip(tr("Quit the application"));
     connect(quitAct, SIGNAL(triggered()), this, SLOT(close()));
 
-    openAct = new QAction(style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), this);
+    openAct = new QAction(style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open image..."), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open image"));
     connect(openAct, SIGNAL(triggered()), this, SLOT(load()));
+
+    saveAsAct = new QAction(style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save image as..."), this);
+    saveAsAct->setStatusTip(tr("Save image as"));
+    connect(saveAsAct, SIGNAL(triggered()), this, SLOT(saveAs()));
 
     openLabAct = new QAction(style()->standardIcon(QStyle::SP_DirOpenIcon), tr("&Open segmentation..."), this);
     openLabAct->setStatusTip(tr("Open segmentation"));
     connect(openLabAct, SIGNAL(triggered()), this, SLOT(loadSegmentation()));
 
-    saveAct = new QAction(style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save segmentation..."), this);
-    saveAct->setShortcut(QKeySequence::Save);
-    saveAct->setStatusTip(tr("Save segmentation"));
-    connect(saveAct, SIGNAL(triggered()), this, SLOT(saveSegmentation()));
+    saveLabAct = new QAction(style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save segmentation"), this);
+    saveLabAct->setShortcut(QKeySequence::Save);
+    saveLabAct->setStatusTip(tr("Save segmentation"));
+    connect(saveLabAct, SIGNAL(triggered()), this, SLOT(saveSegmentation()));
+
+    saveLabAsAct = new QAction(style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save segmentation as..."), this);
+    saveLabAsAct->setShortcut(QKeySequence::SaveAs);
+    saveLabAsAct->setStatusTip(tr("Save segmentation as"));
+    connect(saveLabAsAct, SIGNAL(triggered()), this, SLOT(saveAsSegmentation()));
 
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
+    fileMenu->addAction(saveAsAct);
+    fileMenu->addSeparator();
     fileMenu->addAction(openLabAct);
-    fileMenu->addAction(saveAct);
+    fileMenu->addAction(saveLabAct);
+    fileMenu->addAction(saveLabAsAct);
     fileMenu->addSeparator();
     fileMenu->addAction(quitAct);
 
@@ -82,7 +97,7 @@ void MainWindow::setup(const QString filename)
     toolBar = addToolBar(tr("File"));
     toolBar->addAction(openAct);
     toolBar->addAction(openLabAct);
-    toolBar->addAction(saveAct);
+    toolBar->addAction(saveLabAct);
 
     mprview = new MPRImageView(this,&img);
     connect(mprview, SIGNAL(statusChanged(const QString)), this, SLOT(changeStatus(const QString)));
@@ -187,7 +202,6 @@ void MainWindow::ToolChanged(int index)
 }
 
 //action.push_back(ACTION(49, "S+left button -- Select label on screen",cimg::keyS,M0,LEFT));
-//action.push_back(ACTION(4, "Control+S -- Save labels",cimg::keyS,CTRL));
 //action.push_back(ACTION(48,"Control+Z -- Cancel addition/removal",cimg::keyZ,CTRL));
 //action.push_back(ACTION(12,""                                       ,cimg::keyPADSUB));
 //action.push_back(ACTION(50, "Space -- Clear selection",cimg::keySPACE));
@@ -196,8 +210,8 @@ void MainWindow::ToolChanged(int index)
 void MainWindow::load()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
-                                                    "Load Image",QString(),
-                                                    "Images (*.mhd *.dcm *.hdr)");
+                                                    tr("Load Image"),QString(),
+                                                    tr("Images (*.mhd *.dcm *.hdr)"));
     if (fileName.isEmpty()) return;
 
     if(img.loadImage(fileName.toStdString().c_str()))
@@ -208,11 +222,30 @@ void MainWindow::load()
     else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot open '%1'").arg(fileName));
 }
 
+
+
+void MainWindow::saveAs()
+{
+    QString fileName = QFileDialog::getSaveFileName(this,
+                                                    tr("Save Image"), QString(),
+                                                    tr("Images (*.mhd *.hdr)"));
+    if (fileName.isEmpty()) return;
+
+    if(img.saveImage(fileName.toStdString().c_str()))
+    {
+        changeStatus(tr("Saved '%1'").arg(fileName));
+    }
+    else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot save '%1'").arg(fileName));
+
+}
+
+
+
 void MainWindow::loadSegmentation()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
-                                                    "Load Segmentation",QString(),
-                                                    "Images (*.mhd *.dcm *.hdr *.raw)");
+                                                    tr("Load Segmentation"),QString(),
+                                                    tr("Images (*.mhd *.dcm *.hdr *.raw)"));
     if (fileName.isEmpty()) return;
 
     if(img.loadLabel(fileName.toStdString().c_str()))
@@ -232,13 +265,28 @@ void MainWindow::loadSegmentation()
 }
 
 
-void MainWindow::saveSegmentation()
+void MainWindow::saveAsSegmentation()
 {
     QString fileName = QFileDialog::getSaveFileName(this,
                                                     tr("Save Segmentation"), QString(),
-                                                    "Images (*.mhd *.hdr *.raw)");
-
+                                                    tr("Images (*.mhd *.hdr)"));
     if (fileName.isEmpty()) return;
+
+    if(img.saveLabel(fileName.toStdString().c_str()))
+    {
+        std::string nameFile(fileName.toStdString());
+        nameFile.replace(nameFile.begin()+nameFile.rfind('.'),nameFile.end(),"_names.txt");
+        img.saveNames(nameFile.c_str());
+        changeStatus(tr("Saved '%1' and '%2'").arg(fileName).arg(nameFile.c_str()));
+    }
+    else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot save '%1'").arg(fileName));
+
+}
+
+void MainWindow::saveSegmentation()
+{
+    QString fileName(img.labelFileName.c_str());
+    if(QMessageBox::question(NULL, tr("qtSegmentation"),tr("Overwrite '%1' ?").arg(fileName))==QMessageBox::No) return;
 
     if(img.saveLabel(fileName.toStdString().c_str()))
     {
