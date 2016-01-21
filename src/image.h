@@ -8,7 +8,7 @@
 #include <iostream>
 
 #include "cimgTools.h"
-
+#include <QFileInfo>
 
 typedef float real;
 static const real EPSILON=1E-10;
@@ -16,6 +16,7 @@ static const unsigned char LINECOLORS[3][3]={{ 255,0,0 },{ 0,255,0 },{ 0,0,255 }
 static const unsigned char BRUSHCOLOR[4]={255,0,0,255}; // BGRA
 static const unsigned char ROICOLOR[3]={50,50,255};
 static const unsigned char SEEDCOLOR[3]={0,255,0};
+static const unsigned int MAXLABELS = 256;
 
 template<typename T>
 class image
@@ -46,16 +47,27 @@ public:
     std::vector<bool> labelLock;
     CImg<unsigned char> palette;
 
+    std::string currentPath;
     std::string imageFileName;
     std::string labelFileName;
+
+    // meshes
+    struct MESH
+    {
+        CImgList<unsigned int> faces;
+        CImg<float> vertices;
+    };
+    std::vector<MESH> meshes;
+
 
     image()
     {
         for(unsigned int i=0;i<3;++i)   for(unsigned int j=0;j<3;++j) rotation[i][j]=0;
         for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=translation[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=seed[i]=0; voxelSize[i]=rotation[i][i]=1.; }
         seed[3]=2;
-        labelLock.resize(256); for(unsigned int i=0;i<labelLock.size();++i) labelLock[i]=false;
-        labelName.resize(256); for(unsigned int i=0;i<labelName.size();++i) { std::stringstream ss; ss<<i; labelName[i]=std::string("label ")+ss.str(); }
+        meshes.resize(MAXLABELS);
+        labelLock.resize(MAXLABELS); for(unsigned int i=0;i<labelLock.size();++i) labelLock[i]=false;
+        labelName.resize(MAXLABELS); for(unsigned int i=0;i<labelName.size();++i) { std::stringstream ss; ss<<i; labelName[i]=std::string("label ")+ss.str(); }
         CImg<int> tmp(labelName.size(),1,1,3,1);
         for(unsigned int i=0;i<labelName.size();++i) tmp(i)=(i+ i*25) % 359;
         //tmp.get_shared_channel(0).rand(0,359);
@@ -105,6 +117,7 @@ public:
         intensityRange[1]=img.max();
 
         imageFileName=std::string(filename);
+        QFileInfo fileInfo(QString(imageFileName.c_str()));         currentPath=fileInfo.path().toStdString();
 
         qDebug()<<"dim:"<<dim[0]<<","<<dim[1]<<","<<dim[2];
         qDebug()<<"voxelSize:"<<voxelSize[0]<<","<<voxelSize[1]<<","<<voxelSize[2];
@@ -145,6 +158,8 @@ public:
         if(label.is_empty()) return false;
         labelFileName=std::string(filename);
         label_backup=label;
+
+        for(unsigned int i=0;i<meshes.size();++i) {meshes[i].vertices.assign(); meshes[i].faces.assign();}
         return true;
     }
     
@@ -194,7 +209,17 @@ public:
         }
         else return false;
     }
-    
+
+    template<class t>
+    void imageCoordToPos(real p[3],const t p0[3]) const
+    {
+        for(unsigned int i=0;i<3;++i)
+        {
+            p[i]=0;
+            for(unsigned int j=0;j<3;j++)
+                p[i]+=translation[i]+rotation[i][j]*(real)p0[j]*voxelSize[j];
+        }
+    }
 
     void crop()
     {
@@ -206,7 +231,7 @@ public:
 
         dim[0]=img.width(); dim[1]=img.height(); dim[2]=img.depth();
 
-        for(unsigned int i=0;i<3;++i) for(unsigned int j=0;j<3;j++) translation[i]+=rotation[i][j]*viewBB[0][j]*voxelSize[j];
+        imageCoordToPos(translation,viewBB[0]);
 
         for(unsigned int i=0;i<3;++i)     {   slice[i]-=viewBB[0][i]; coord[i]-=viewBB[0][i]; seed[i]-=viewBB[0][i];  }
         resetViewBB();
@@ -478,6 +503,13 @@ public:
         return labelName[label(coord[0],coord[1],coord[2])];
     }
 
+    T getIntensityAtCoord()
+    {
+        if(img.is_empty()) return 0;
+        if(!img.containsXYZC(coord[0],coord[1],coord[2])) return 0;
+        return img(coord[0],coord[1],coord[2]);
+    }
+
     bool setSlice(const int d,const unsigned int area)
     {
         int oldval=slice[area];
@@ -580,6 +612,56 @@ public:
     {
         cimg_foroff(roi,off) if( roi[off] ) roi[off]=0; else roi[off]=1;
     }
+
+
+
+    unsigned int marchingCubes(const int res=0)
+    {
+        unsigned int nbfaces=0;
+        for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
+        {
+            meshes[i].faces.assign();
+            meshes[i].vertices.assign();
+
+            CImg<bool> sel(label.width(),label.height(),label.depth(),label.spectrum(),false);
+            cimg_forXYZ(label,x,y,z) if(label(x,y,z)==i) sel(x,y,z)=true;
+
+            int r=res; if(r<=0) r=-100;
+            meshes[i].vertices = sel.get_isosurface3d (meshes[i].faces, 1.0,r,r,r);
+            // transform points
+            cimg_forX(meshes[i].vertices,j)
+            {
+                real p[3],p0[3]={meshes[i].vertices(j,0),meshes[i].vertices(j,1),meshes[i].vertices(j,2)};
+                imageCoordToPos(p,p0);
+                for(unsigned int k=0;k<3;k++) meshes[i].vertices(j,k)=p[k];
+            }
+            // flip faces
+            cimglist_for(meshes[i].faces,l) meshes[i].faces(l).mirror('y');
+            nbfaces+=meshes[i].faces.size();
+        }
+        return nbfaces;
+    }
+
+    bool saveObjs(const std::string& path)
+    {
+        for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
+            if(meshes[i].vertices.width())
+            {
+                std::string objFile=path+std::string("/")+labelName[i]+std::string(".obj");
+                std::ofstream objStream (objFile.c_str());
+                if(!objStream.is_open()) return false;
+                cimg_forX(meshes[i].vertices,j) objStream<<"v "<<meshes[i].vertices(j,0)<<" "<<meshes[i].vertices(j,1)<<" "<<meshes[i].vertices(j,2)<<std::endl;
+                cimglist_for(meshes[i].faces,l)
+                {
+                    objStream<<"f";
+                    cimg_forY(meshes[i].faces(l),j)  objStream<<" "<<(1+meshes[i].faces(l)(j));
+                    objStream<<std::endl;
+                }
+                objStream.close();
+            }
+        return true;
+    }
+
 
 };
 

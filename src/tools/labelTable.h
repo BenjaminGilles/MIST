@@ -7,7 +7,6 @@
 #include <QComboBox>
 #include <QHeaderView>
 #include <QColorDialog>
-#include <QPushButton>
 #include <QGroupBox>
 #include <QTableWidget>
 #include <QHBoxLayout>
@@ -49,6 +48,7 @@ public:
 
         table=new QTableWidget(0,3,parent);
         table->setColumnWidth ( 0, 30);
+        table->horizontalHeader()->setSectionResizeMode(1,QHeaderView::Stretch);
         table->setColumnWidth ( 2, 30);
         table->horizontalHeader()->hide();
         connect(table, SIGNAL( cellChanged (int,int) ), this, SLOT( cellChanged(int,int) ) );
@@ -101,6 +101,7 @@ public slots:
 
     void updateTable()
     {
+        QStringList headerLabels;
         table->setRowCount(img->labelName.size());
         for(unsigned int i=0;i<img->labelName.size();i++)
         {
@@ -115,7 +116,9 @@ public slots:
             lockitem->setFlags(Qt::ItemIsUserCheckable);
             lockitem->setTextAlignment(Qt::AlignCenter);
             table->setItem(i, 2, lockitem);
+            headerLabels << QString::number(i);
         }
+        table->setVerticalHeaderLabels(headerLabels);
     }
 
     void cellChanged(int r,int c)

@@ -27,7 +27,7 @@ QSlice::QSlice(QWidget *parent)
                 );
     _refreshTimer.start(25);
 
-    // suivi des déplacement de la souris
+    // suivi des deplacement de la souris
     this->setMouseTracking(true);
 }
 
@@ -192,7 +192,7 @@ void QSlice::paintEvent(QPaintEvent */*event*/)
     painter.setRenderHint(QPainter::Antialiasing);
 
     // overpainting: c'est possible ici
-    // (? mettre des HUD sur les curseurs lorsqu'on les déplacent ?)
+    // (? mettre des HUD sur les curseurs lorsqu'on les deplacent ?)
 
     painter.end();
 }

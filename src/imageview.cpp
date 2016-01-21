@@ -60,7 +60,7 @@ void GraphView::keyPressEvent(QKeyEvent *event)
             emit sliceChanged(img->slice[area]);
         }
     if(event->key()==Qt::Key_PageDown || (event->key()==Qt::Key_Down && event->modifiers().testFlag(Qt::ShiftModifier)))
-        if(setSlice(img->slice[area]+1))
+        if(setSlice(img->slice[area]-1))
         {
             emit sliceChanged(img->slice[area]);
         }
@@ -221,8 +221,9 @@ void GraphView::mouseMoveEvent(QMouseEvent *mouseEvent)
 
     img->updateCoord((double)currentPos.x()/(double)rect.width(),(double)currentPos.y()/(double)rect.height(),area);
     std::string l = img->getLabelAtCoord();
-    if(l.size())    emit statusChanged(tr("(%1,%2,%3) : %4").arg(img->coord[0]).arg(img->coord[1]).arg(img->coord[2]).arg(l.c_str()));
-    else            emit statusChanged(tr("(%1,%2,%3)").arg(img->coord[0]).arg(img->coord[1]).arg(img->coord[2]));
+    T val = img->getIntensityAtCoord();
+    if(l.size())    emit statusChanged(tr("(%1,%2,%3) : %4 : %5").arg(img->coord[0]).arg(img->coord[1]).arg(img->coord[2]).arg(val).arg(l.c_str()));
+    else            emit statusChanged(tr("(%1,%2,%3) : %4").arg(img->coord[0]).arg(img->coord[1]).arg(img->coord[2]).arg(val));
 
     if(mode==Brush && pressed==Qt::LeftButton) {img->selectBrush(area,!pressedModifiers.testFlag(Qt::ShiftModifier)); updateBackground=true;}
 

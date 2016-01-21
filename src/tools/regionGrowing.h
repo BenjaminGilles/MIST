@@ -2,7 +2,8 @@
 #define REGIONGROWING_H
 
 #include <tools/baseTool.h>
-#include <QPushButton>
+#include <QAction>
+#include <QToolBar>
 #include <QVBoxLayout>
 #include <widgets/qSlice.h>
 
@@ -26,27 +27,32 @@ public:
         rangew = new QRangeWidget(parent);
         connect(rangew, SIGNAL( rangeChanged(int,int) ), this, SLOT( changeRange(int,int) ) );
 
-        QPushButton* is2DAct = new QPushButton(tr("2D"), parent);
+        QAction* is2DAct = new QAction(tr("2D"), parent);
         is2DAct->setStatusTip(tr("Restrict growing to 2D"));
         is2DAct->setCheckable(true);
         is2DAct->setChecked(is2D);
         connect(is2DAct, SIGNAL(toggled(bool)),this, SLOT(Is2D(bool)));
-        QPushButton* InLabelAct = new QPushButton(tr("Inside label"), parent);
+
+        QAction* InLabelAct = new QAction(tr("Inside label"), parent);
         InLabelAct->setStatusTip(tr("Restrict growing to label"));
         InLabelAct->setCheckable(true);
         InLabelAct->setChecked(inLabel);
         connect(InLabelAct, SIGNAL(toggled(bool)),this, SLOT(InLabel(bool)));
-        QPushButton* ConnectedAct = new QPushButton(tr("Connected"), parent);
+
+        QAction* ConnectedAct = new QAction(tr("Connected"), parent);
         ConnectedAct->setStatusTip(tr("Enforce connectivity"));
         ConnectedAct->setCheckable(true);
         ConnectedAct->setChecked(connected);
         connect(ConnectedAct, SIGNAL(toggled(bool)),this, SLOT(Connected(bool)));
+        QToolBar* ToolBar=new QToolBar(parent);
+        ToolBar->addAction(is2DAct);
+        ToolBar->addAction(InLabelAct);
+        ToolBar->addAction(ConnectedAct);
+        ToolBar->addSeparator();
 
         QVBoxLayout *layout = new QVBoxLayout();
         layout->addWidget(rangew);
-        layout->addWidget(is2DAct);
-        layout->addWidget(InLabelAct);
-        layout->addWidget(ConnectedAct);
+        layout->addWidget(ToolBar);
         layout->addStretch();
 
         QWidget *w = new QWidget(parent);

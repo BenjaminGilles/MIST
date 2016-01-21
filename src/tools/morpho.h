@@ -3,8 +3,9 @@
 
 #include <tools/baseTool.h>
 #include <QLabel>
-#include <QHBoxLayout>
-#include <QPushButton>
+#include <QVBoxLayout>
+#include <QAction>
+#include <QToolBar>
 #include <QSpinBox>
 
 class morphoTool:public baseTool
@@ -20,37 +21,43 @@ public:
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
+        QAction* DilateBut = new QAction(tr("Dilate"), parent);
+        DilateBut->setStatusTip(tr("Dilate"));
+        connect(DilateBut, SIGNAL(triggered()),this, SLOT(Dilate()));
+        QAction* ErodeBut = new QAction(tr("Erode"), parent);
+        ErodeBut->setStatusTip(tr("Erode"));
+        connect(ErodeBut, SIGNAL(triggered()),this, SLOT(Erode()));
         QLabel* sizelab=new QLabel(tr("Size: "),parent);
         morphoSizespin=new QSpinBox(parent);
         morphoSizespin->setRange(0, 100);
         morphoSizespin->setValue(1);
-        QHBoxLayout *sizelayout = new QHBoxLayout();
-        sizelayout ->setMargin(0);
-        sizelayout ->addWidget(sizelab);
-        sizelayout ->addWidget(morphoSizespin);
-        sizelayout ->addStretch();
-        QWidget *sizew = new QWidget(parent);
-        sizew->setLayout(sizelayout);
+        QToolBar* ToolBar1=new QToolBar(parent);
+        ToolBar1->addAction(DilateBut);
+        ToolBar1->addSeparator();
+        ToolBar1->addAction(ErodeBut);
+        ToolBar1->addSeparator();
+        ToolBar1->addWidget(sizelab);
+        ToolBar1->addWidget(morphoSizespin);
+        ToolBar1->addSeparator();
 
-        QPushButton* DilateBut = new QPushButton(tr("Dilate"), parent);
-        DilateBut->setStatusTip(tr("Dilate"));
-        connect(DilateBut, SIGNAL(pressed()),this, SLOT(Dilate()));
-        QPushButton* ErodeBut = new QPushButton(tr("Erode"), parent);
-        ErodeBut->setStatusTip(tr("Erode"));
-        connect(ErodeBut, SIGNAL(pressed()),this, SLOT(Erode()));
-        QPushButton* FillHolesBut = new QPushButton(tr("FillHoles"), parent);
+        QAction* FillHolesBut = new QAction(tr("FillHoles"), parent);
         FillHolesBut->setStatusTip(tr("FillHoles"));
-        connect(FillHolesBut, SIGNAL(pressed()),this, SLOT(FillHoles()));
-        QPushButton* InvertBut = new QPushButton(tr("Invert"), parent);
+        connect(FillHolesBut, SIGNAL(triggered()),this, SLOT(FillHoles()));
+        QToolBar* ToolBar2=new QToolBar(parent);
+        ToolBar2->addAction(FillHolesBut);
+        ToolBar2->addSeparator();
+
+        QAction* InvertBut = new QAction(tr("Invert"), parent);
         InvertBut->setStatusTip(tr("Invert"));
-        connect(InvertBut, SIGNAL(pressed()),this, SLOT(Invert()));
+        connect(InvertBut, SIGNAL(triggered()),this, SLOT(Invert()));
+        QToolBar* ToolBar3=new QToolBar(parent);
+        ToolBar3->addAction(InvertBut);
+        ToolBar3->addSeparator();
 
         QVBoxLayout *layout = new QVBoxLayout();
-        layout->addWidget(sizew);
-        layout->addWidget(DilateBut);
-        layout->addWidget(ErodeBut);
-        layout->addWidget(FillHolesBut);
-        layout->addWidget(InvertBut);
+        layout->addWidget(ToolBar1);
+        layout->addWidget(ToolBar2);
+        layout->addWidget(ToolBar3);
         layout->addStretch();
 
         QWidget *w = new QWidget(parent);

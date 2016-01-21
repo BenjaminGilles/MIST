@@ -4,7 +4,7 @@
 #include <tools/baseTool.h>
 #include <QLabel>
 #include <QSpinBox>
-#include <QHBoxLayout>
+#include <QToolBar>
 
 class brushTool:public baseTool
 {
@@ -23,16 +23,13 @@ public:
         sizespin->setRange(0, 100);
         sizespin->setValue(img->brushSize);
         connect(sizespin, SIGNAL( valueChanged(int) ), this , SLOT( setBrushSize(int) ) );
-        QHBoxLayout *sizelayout = new QHBoxLayout();
-        sizelayout ->setMargin(0);
-        sizelayout ->addWidget(sizelab);
-        sizelayout ->addWidget(sizespin);
-        sizelayout ->addStretch();
-        QWidget *sizew = new QWidget(parent);
-        sizew->setLayout(sizelayout);
+        QToolBar *toolbar = new QToolBar(parent);
+        toolbar ->addWidget(sizelab);
+        toolbar ->addWidget(sizespin);
+        toolbar ->addSeparator();
 
         QVBoxLayout *layout = new QVBoxLayout();
-        layout->addWidget(sizew);
+        layout->addWidget(toolbar);
         layout->addStretch();
 
         QWidget *w = new QWidget(parent);

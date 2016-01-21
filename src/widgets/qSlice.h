@@ -14,54 +14,54 @@ class QMouseEvent ;
 
 class QSlice : public QGLWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
-	private:
+    private:
         int		_currentMin;	// valeur minimale courante
         int		_currentMax;	// valeur maximale courante
         int		_valueMin;		// valeur minimale limite
         int		_valueMax;		// valeur maximale limite
-		double		_cursorSize;	// taille du curseur
-		QTimer		_refreshTimer;	// timer de maj
-		double 		_mouseX;		// dernière position de la souris
-		int 		_moved;			// indice de l'élément déplacé
-		bool 		_onMin;			// sur le curseur min
-		bool 		_onMax;			// sur le curseur max
-	
-	public:
-		QSlice(QWidget *parent = NULL);	// constructeur
-		~QSlice();						// destructeur
-		
-		QSize sizeHint() const;			// taille par defaut
-		
-		//getters
+        double		_cursorSize;	// taille du curseur
+        QTimer		_refreshTimer;	// timer de maj
+        double 		_mouseX;		// derni?re position de la souris
+        int 		_moved;			// indice de l'?l?ment d?plac?
+        bool 		_onMin;			// sur le curseur min
+        bool 		_onMax;			// sur le curseur max
+
+    public:
+        QSlice(QWidget *parent = NULL);	// constructeur
+        ~QSlice();						// destructeur
+
+        QSize sizeHint() const;			// taille par defaut
+
+        //getters
         int currentMin() const {return _currentMin;}
         int currentMax() const {return _currentMax;}
         int valueMin() const {return _valueMin;}
         int valueMax() const {return _valueMax;}
-		
-		//setters
-		void setValueMin(int valueMin);
-		void setValueMax(int valueMax);
-	
-	public slots:
-		void setCurrentMin(int currentMin);
-		void setCurrentMax(int currentMax);
+
+        //setters
+        void setValueMin(int valueMin);
+        void setValueMax(int valueMax);
+
+    public slots:
+        void setCurrentMin(int currentMin);
+        void setCurrentMax(int currentMax);
         void printVals();
 
-	protected:
-		void initializeGL();
-		void paintGL();
-		void resizeGL(int width, int height);
-		void paintEvent(QPaintEvent *event);
-		void mousePressEvent(QMouseEvent *event);
-		void mouseReleaseEvent(QMouseEvent *event);
-		void mouseMoveEvent(QMouseEvent *event);
-	
-		void drawCursor(double pos, int id);// id = 1 -> min
-											// id = 2 -> max
+    protected:
+        void initializeGL();
+        void paintGL();
+        void resizeGL(int width, int height);
+        void paintEvent(QPaintEvent *event);
+        void mousePressEvent(QMouseEvent *event);
+        void mouseReleaseEvent(QMouseEvent *event);
+        void mouseMoveEvent(QMouseEvent *event);
 
-	signals:
+        void drawCursor(double pos, int id);// id = 1 -> min
+                                            // id = 2 -> max
+
+    signals:
         void minChanged(int val);
         void maxChanged(int val);
 };

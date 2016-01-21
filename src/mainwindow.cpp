@@ -128,7 +128,7 @@ void MainWindow::setup(const QString filename)
     layout->addWidget(view->getMenu());
     layout->addWidget(labelTable->getMenu());
     layout->addWidget(createTools());
-    layout->addStretch();
+//    layout->addStretch();
     QWidget *newWidget = new QWidget(this);
     newWidget->setLayout(layout);
 
@@ -191,13 +191,16 @@ QGroupBox *MainWindow::createTools()
     tab->addTab(marchingCubes->getMenu(),tr(""));
     tab->setTabIcon(3,QIcon(":mesh"));
     tab->setTabToolTip(3,tr("Mesh tools"));
+
     connect(tab, SIGNAL(currentChanged(int)),this, SLOT(ToolChanged(int)));
 
     QVBoxLayout *layout = new QVBoxLayout();
     layout->addWidget(tab);
-    layout->addStretch();
+//    layout->addStretch();
 
     groupBox->setLayout(layout);
+    groupBox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Fixed);
+
     return groupBox;
 }
 
@@ -234,8 +237,9 @@ void MainWindow::ToolChanged(int index)
 void MainWindow::load()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
-                                                    tr("Load Image"),QString(),
+                                                    tr("Load Image"),QString(img.currentPath.c_str()),
                                                     tr("Images (*.mhd *.dcm *.hdr)"));
+
     if (fileName.isEmpty()) return;
 
     if(img.loadImage(fileName.toStdString().c_str()))
@@ -251,7 +255,7 @@ void MainWindow::load()
 void MainWindow::saveAs()
 {
     QString fileName = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Image"), QString(),
+                                                    tr("Save Image"), QString(img.currentPath.c_str()),
                                                     tr("Images (*.mhd *.hdr)"));
     if (fileName.isEmpty()) return;
 
@@ -268,7 +272,7 @@ void MainWindow::saveAs()
 void MainWindow::loadSegmentation()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
-                                                    tr("Load Segmentation"),QString(),
+                                                    tr("Load Segmentation"),QString(img.currentPath.c_str()),
                                                     tr("Images (*.mhd *.dcm *.hdr *.raw)"));
     if (fileName.isEmpty()) return;
 
@@ -292,7 +296,7 @@ void MainWindow::loadSegmentation()
 void MainWindow::saveAsSegmentation()
 {
     QString fileName = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Segmentation"), QString(),
+                                                    tr("Save Segmentation"), QString(img.currentPath.c_str()),
                                                     tr("Images (*.mhd *.hdr)"));
     if (fileName.isEmpty()) return;
 

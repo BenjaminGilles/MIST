@@ -2,44 +2,49 @@
 #define MARCHINGCUBES_H
 
 #include <tools/baseTool.h>
-#include <QPushButton>
+#include <QToolBar>
 #include <QSpinBox>
-#include <QHBoxLayout>
+#include <QFileDialog>
 #include <QVBoxLayout>
+#include <QMessageBox>
 
 class marchingCubesTool:public baseTool
 {
     Q_OBJECT
 
 public:
-    marchingCubesTool(MPRImageView* v,image<T>* i):baseTool(v,i)  {}
+    marchingCubesTool(MPRImageView* v,image<T>* i):baseTool(v,i),computeSpin(NULL)  {}
     ~marchingCubesTool()
     {
+        if(computeSpin!=NULL) delete computeSpin;
     }
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
-        QPushButton* ComputeBut = new QPushButton(tr("Compute"), parent);
-        ComputeBut->setStatusTip(tr("Compute Mesh"));
-        connect(ComputeBut, SIGNAL(pressed()),this, SLOT(ComputeMesh()));
-        QSpinBox* Computespin=new QSpinBox(parent);
-        Computespin->setRange(1, 1000);
-        Computespin->setValue(100);
-        QHBoxLayout *Computelayout = new QHBoxLayout();
-        Computelayout ->setMargin(0);
-        Computelayout ->addWidget(ComputeBut);
-        Computelayout ->addWidget(Computespin);
-        Computelayout ->addStretch();
-        QWidget *Computew = new QWidget(parent);
-        Computew->setLayout(Computelayout);
+        QAction* computeAct = new QAction(tr("Compute isosurfaces"), parent);
+        computeAct->setStatusTip(tr("Compute isosurfaces"));
+        connect(computeAct, SIGNAL(triggered()),this, SLOT(ComputeMesh()));
 
-        QPushButton* SaveBut = new QPushButton(tr("Save"), parent);
-        SaveBut->setStatusTip(tr("Save Mesh"));
-        connect(SaveBut, SIGNAL(pressed()),this, SLOT(SaveMesh()));
+        computeSpin=new QSpinBox(parent);
+        computeSpin->setRange(0, 10000);
+        computeSpin->setValue(0);
+
+        QToolBar* ToolBar=new QToolBar(parent);
+        ToolBar->addWidget(computeSpin);
+        ToolBar->addAction(computeAct);
+        ToolBar->addSeparator();
+
+        QAction* saveAct = new QAction(/*QIcon(":save"),*/tr("Save isosurfaces"), parent);
+        saveAct->setStatusTip(tr("Save isosurfaces"));
+        connect(saveAct, SIGNAL(triggered()),this, SLOT(SaveMesh()));
+
+        QToolBar* ToolBar2=new QToolBar(parent);
+        ToolBar2->addAction(saveAct);
+        ToolBar2->addSeparator();
 
         QVBoxLayout *layout = new QVBoxLayout();
-        layout->addWidget(Computew);
-        layout->addWidget(SaveBut);
+        layout->addWidget(ToolBar);
+        layout->addWidget(ToolBar2);
         layout->addStretch();
 
         QWidget *w = new QWidget(parent);
@@ -52,16 +57,27 @@ public slots:
 
     void ComputeMesh()
     {
+        unsigned int nbfaces=img->marchingCubes(computeSpin->value());
+        emit statusChanged(tr("Generated %1 faces").arg(nbfaces));
     }
 
     void SaveMesh()
     {
+        QString path = QFileDialog::getExistingDirectory(NULL,
+                                                         tr("Select folder"), QString(img->currentPath.c_str()));
+        if (path.isEmpty()) return;
+
+        if(img->saveObjs(path.toStdString()))
+        {
+            emit statusChanged(tr("Mesh saved in '%1'").arg(path));
+        }
+        else  QMessageBox::warning(NULL, tr("QtSegmentation"), tr("Cannot save meshes in '%1'").arg(path));
     }
 
 
 
 private:
-
+    QSpinBox* computeSpin;
 
 };
 
