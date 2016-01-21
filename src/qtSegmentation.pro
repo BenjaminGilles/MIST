@@ -22,7 +22,7 @@ HEADERS  += mainwindow.h\
     widgets/qSlice.h \
     tools/baseTool.h \
     tools/labelTable.h \
-    tools/view.h \
+    tools/imageTool.h \
     tools/morpho.h \
     tools/brush.h \
     tools/regionGrowing.h \

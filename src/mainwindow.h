@@ -6,7 +6,7 @@
 #include <imageview.h>
 #include <image.h>
 
-#include <tools/view.h>
+#include <tools/imageTool.h>
 #include <tools/labelTable.h>
 #include <tools/morpho.h>
 #include <tools/brush.h>
@@ -40,7 +40,7 @@ private:
     void setup(const QString filename);
     QWidget* createTools();
 
-    viewTool* view;
+    imageTool* view;
     labelTableTool* labelTable;
     morphoTool* morpho;
     brushTool* brush;

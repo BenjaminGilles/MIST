@@ -168,7 +168,7 @@ void MainWindow::reinit()
 
 QWidget *MainWindow::createTools()
 {
-    view = new viewTool(mprview,&img);
+    view = new imageTool(mprview,&img);
     morpho = new morphoTool(mprview,&img);
     brush = new brushTool(mprview,&img);
     regionGrowing = new regionGrowingTool(mprview,&img);
@@ -179,7 +179,7 @@ QWidget *MainWindow::createTools()
 
     tab->addTab(view->getMenu(this),tr(""));
     tab->setTabIcon(0,QIcon(":image"));
-    tab->setTabToolTip(0,tr("Image Tools"));
+    tab->setTabToolTip(0,tr("Image tools"));
 
     tab->addTab(morpho->getMenu(this),tr(""));
     tab->setTabIcon(1,QIcon(":morpho"));

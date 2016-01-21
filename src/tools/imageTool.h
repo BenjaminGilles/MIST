@@ -7,13 +7,13 @@
 #include <QHBoxLayout>
 #include <widgets/qSlice.h>
 
-class viewTool:public baseTool
+class imageTool:public baseTool
 {
     Q_OBJECT
 
 public:
-    viewTool(MPRImageView* v,image<T>* i):baseTool(v,i),zoomAct(NULL),oldViewMode(GraphView::Navigation),rangew(NULL)  {}
-    ~viewTool()
+    imageTool(MPRImageView* v,image<T>* i):baseTool(v,i),zoomAct(NULL),oldViewMode(GraphView::Navigation),rangew(NULL)  {}
+    ~imageTool()
     {
         if(zoomAct!=NULL) delete zoomAct;
         if(rangew!=NULL) delete rangew;
