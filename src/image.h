@@ -151,8 +151,10 @@ public:
         if(fopen(filename, "r")==NULL) return false;
         
         std::string file(filename);
-        if (file.find(".hdr")!=std::string::npos)             label.load_analyze(filename);
-        else if (file.find(".raw")!=std::string::npos)        label.load_raw(filename,dim[0],dim[1],dim[2]);
+        if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"raw");
+
+        if (file.find(".hdr")!=std::string::npos)             label.load_analyze(file.c_str());
+        else if (file.find(".raw")!=std::string::npos)        label.load_raw(file.c_str(),dim[0],dim[1],dim[2]);
         else return false;
         
         if(label.is_empty()) return false;
@@ -181,10 +183,23 @@ public:
         return true;
     }
     
-    bool loadNames(const char* filename)
+    std::string getNamesFile()
     {
-        if(fopen(filename, "r")==NULL) return false;
-        std::string nameFile(filename);
+        if(labelFileName.length()==0) return NULL;
+        std::string namesFile(labelFileName);
+        // remove "_label"
+        std::string from("_label");
+        size_t start_pos = namesFile.find(from);
+        if(start_pos != std::string::npos)   namesFile.replace(start_pos, from.length(), std::string());
+        // add _names.txt
+        namesFile.replace(namesFile.begin()+namesFile.rfind('.'),namesFile.end(),"_names.txt");
+        return namesFile;
+    }
+
+    bool loadNames(const char* filename=NULL)
+    {
+        std::string nameFile = filename?std::string(filename):getNamesFile();
+        if(fopen(nameFile.c_str(), "r")==NULL) return false;
         std::ifstream iStream (nameFile.c_str(), std::ifstream::in);
         if(iStream.is_open())
         {
@@ -197,9 +212,9 @@ public:
         else return false;
     }
     
-    bool saveNames(const char* filename)
+    bool saveNames(const char* filename=NULL)
     {
-        std::string nameFile(filename);
+        std::string nameFile = filename?std::string(filename):getNamesFile();
         std::ofstream fileStream (nameFile.c_str());
         if(fileStream.is_open())
         {

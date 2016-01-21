@@ -126,7 +126,7 @@ void MainWindow::setup(const QString filename)
     QVBoxLayout *layout = new QVBoxLayout();
     layout->addWidget(labelTable->getMenu(this));
     layout->addWidget(createTools());
-//    layout->addStretch();
+    //    layout->addStretch();
     QWidget *newWidget = new QWidget(this);
     newWidget->setLayout(layout);
 
@@ -201,10 +201,10 @@ QWidget *MainWindow::createTools()
 
     QVBoxLayout *layout = new QVBoxLayout();
     layout->addWidget(tab);
-//    layout->addStretch();
+    //    layout->addStretch();
 
     QGroupBox *w = new QGroupBox(tr("Tools"),this);
-//    QWidget *w = new QWidget(this);
+    //    QWidget *w = new QWidget(this);
     w->setLayout(layout);
     w->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Fixed);
 
@@ -285,18 +285,11 @@ void MainWindow::loadSegmentation()
 
     if(img.loadLabel(fileName.toStdString().c_str()))
     {
-        mprview->Render(true);
+        if(img.loadNames())        labelTable->updateTable();
         changeStatus(tr("Opened '%1'").arg(fileName));
+        mprview->Render(true);
     }
     else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot open '%1'").arg(fileName));
-
-    // try to load names
-    std::string nameFile(fileName.toStdString());
-    nameFile.replace(nameFile.begin()+nameFile.rfind('.'),nameFile.end(),"_names.txt");
-    if(img.loadNames(nameFile.c_str()))
-    {
-        labelTable->updateTable();
-    }
 }
 
 
@@ -309,10 +302,8 @@ void MainWindow::saveAsSegmentation()
 
     if(img.saveLabel(fileName.toStdString().c_str()))
     {
-        std::string nameFile(fileName.toStdString());
-        nameFile.replace(nameFile.begin()+nameFile.rfind('.'),nameFile.end(),"_names.txt");
-        img.saveNames(nameFile.c_str());
-        changeStatus(tr("Saved '%1' and '%2'").arg(fileName).arg(nameFile.c_str()));
+        img.saveNames();
+        changeStatus(tr("Saved '%1'").arg(fileName));
     }
     else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot save '%1'").arg(fileName));
 
@@ -325,10 +316,8 @@ void MainWindow::saveSegmentation()
 
     if(img.saveLabel(fileName.toStdString().c_str()))
     {
-        std::string nameFile(fileName.toStdString());
-        nameFile.replace(nameFile.begin()+nameFile.rfind('.'),nameFile.end(),"_names.txt");
-        img.saveNames(nameFile.c_str());
-        changeStatus(tr("Saved '%1' and '%2'").arg(fileName).arg(nameFile.c_str()));
+        img.saveNames();
+        changeStatus(tr("Saved '%1'").arg(fileName));
     }
     else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot save '%1'").arg(fileName));
 
