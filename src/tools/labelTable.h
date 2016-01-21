@@ -47,8 +47,9 @@ public:
         ToolBarOpacity->addWidget(opacitySlider);
         ToolBarOpacity->addAction(borderAct);
 
-        table=new QTableWidget(0,2,parent);
+        table=new QTableWidget(0,3,parent);
         table->setColumnWidth ( 0, 30);
+        table->setColumnWidth ( 2, 30);
         table->horizontalHeader()->hide();
         connect(table, SIGNAL( cellChanged (int,int) ), this, SLOT( cellChanged(int,int) ) );
         connect(table, SIGNAL( cellClicked (int,int) ), this, SLOT( cellClicked(int,int) ) );
@@ -109,6 +110,11 @@ public slots:
             color->setBackground(QBrush(QColor(img->palette(i,0,0,0),img->palette(i,0,0,1),img->palette(i,0,0,2))));
             color->setFlags(Qt::ItemIsEnabled);
             table->setItem(i, 0, color);
+            QTableWidgetItem *lockitem = new QTableWidgetItem();
+            lockitem->setIcon(QIcon(img->labelLock[i]?":lock":""));
+            lockitem->setFlags(Qt::ItemIsUserCheckable);
+            lockitem->setTextAlignment(Qt::AlignCenter);
+            table->setItem(i, 2, lockitem);
         }
     }
 
@@ -120,8 +126,13 @@ public slots:
         }
     }
 
-    void cellClicked(int /*r*/,int /*c*/)
+    void cellClicked(int r,int c)
     {
+        if(c==2)
+        {
+            img->labelLock[r]=!img->labelLock[r];
+            table->item(r,c)->setIcon(QIcon(img->labelLock[r]?":lock":""));
+        }
     }
 
     void cellDoubleClicked(int r,int c)
@@ -152,8 +163,7 @@ public slots:
     {
         std::vector<unsigned int> s=getSelectedLabels();
         if(s.size()!=1) { QMessageBox::warning(NULL, tr("qtSegmentation"),tr("Please select only one label")); return; }
-        bool overwrite=true; // todo: option ?
-        for(unsigned int i=0;i<s.size();i++)        img->addRoiToLabel(s[0],overwrite);
+        for(unsigned int i=0;i<s.size();i++)        img->addRoiToLabel(s[0]);
         img->clearRoi();
         mprview->Render();
     }

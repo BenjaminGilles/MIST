@@ -43,6 +43,7 @@ public:
     CImg<unsigned char> label;
     CImg<unsigned char> label_backup;
     std::vector<std::string> labelName;
+    std::vector<bool> labelLock;
     CImg<unsigned char> palette;
 
     std::string imageFileName;
@@ -53,6 +54,7 @@ public:
         for(unsigned int i=0;i<3;++i)   for(unsigned int j=0;j<3;++j) rotation[i][j]=0;
         for(unsigned int i=0;i<3;++i)      { slice[i]=coord[i]=dim[i]=translation[i]=dimBB[i]=viewBB[0][i]=viewBB[1][i]=seed[i]=0; voxelSize[i]=rotation[i][i]=1.; }
         seed[3]=2;
+        labelLock.resize(256); for(unsigned int i=0;i<labelLock.size();++i) labelLock[i]=false;
         labelName.resize(256); for(unsigned int i=0;i<labelName.size();++i) { std::stringstream ss; ss<<i; labelName[i]=std::string("label ")+ss.str(); }
         CImg<int> tmp(labelName.size(),1,1,3,1);
         for(unsigned int i=0;i<labelName.size();++i) tmp(i)=(i+ i*25) % 359;
@@ -174,6 +176,7 @@ public:
             char txt[1024]; int i;
             while(!iStream.eof()) { iStream >> i ; iStream.getline(txt,1024); if(!iStream.eof() && i>=0 && i<(int)labelName.size()) labelName[i]=std::string(txt+1);}
             iStream.close();
+            for(unsigned int i=0;i<labelLock.size();++i) labelLock[i]=false;
             return true;
         }
         else return false;
@@ -435,19 +438,19 @@ public:
         cimg_forXYZ(label,x,y,z) if(label(x,y,z)==l) roi(x,y,z)=1;
     }
 
-    void addRoiToLabel(const unsigned int l,const bool overwrite=true)
+    void addRoiToLabel(const unsigned int l)
     {
         if(roi.is_empty()) return;
         if(label.is_empty()) return;
         label_backup=label;
-        if(overwrite)  { cimg_forXYZ(label,x,y,z) if(roi(x,y,z)==1) label(x,y,z)=l; }
-        else  { cimg_forXYZ(label,x,y,z) if(roi(x,y,z)==1 && label(x,y,z)==0) label(x,y,z)=l; }
+        cimg_forXYZ(label,x,y,z) if(roi(x,y,z)==1) if(!labelLock[label(x,y,z)]) label(x,y,z)=l;
     }
 
     void delRoiFromLabel(const unsigned int l)
     {
         if(roi.is_empty()) return;
         if(label.is_empty()) return;
+        if(labelLock[l]) return;
         label_backup=label;
         cimg_forXYZ(label,x,y,z) if(roi(x,y,z)==1 && label(x,y,z)==l) label(x,y,z)=0;
     }
