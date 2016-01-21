@@ -144,7 +144,7 @@ public slots:
         std::vector<unsigned int> s=getSelectedLabels();
         img->clearRoi();
         for(unsigned int i=0;i<s.size();i++)        img->addLabelToRoi(s[i]);
-        for(unsigned int i=0;i<s.size();i++)        qDebug()<<s[i];
+//        for(unsigned int i=0;i<s.size();i++)        qDebug()<<s[i];
         mprview->Render();
     }
 

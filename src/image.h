@@ -41,6 +41,7 @@ public:
     T intensityRange[2];
 
     CImg<unsigned char> label;
+    CImg<unsigned char> label_backup;
     std::vector<std::string> labelName;
     CImg<unsigned char> palette;
 
@@ -96,7 +97,7 @@ public:
         resetViewBB();
         
         roi.resize(dim[0],dim[1],dim[2],1); roi.fill(0);
-        if((int)dim[0]!=label.width() || (int)dim[1]!=label.height() || (int)dim[2]!=label.depth()) {label.resize(dim[0],dim[1],dim[2],1); label.fill(0); }
+        if((int)dim[0]!=label.width() || (int)dim[1]!=label.height() || (int)dim[2]!=label.depth()) {label.resize(dim[0],dim[1],dim[2],1); label.fill(0); label_backup=label;}
         
         intensityRange[0]=img.min();
         intensityRange[1]=img.max();
@@ -141,7 +142,7 @@ public:
         
         if(label.is_empty()) return false;
         labelFileName=std::string(filename);
-
+        label_backup=label;
         return true;
     }
     
@@ -197,6 +198,7 @@ public:
         if(img.is_empty()) return;
         img.crop(viewBB[0][0],viewBB[0][1],viewBB[0][2],viewBB[1][0],viewBB[1][1],viewBB[1][2]);
         if(!label.is_empty()) label.crop(viewBB[0][0],viewBB[0][1],viewBB[0][2],viewBB[1][0],viewBB[1][1],viewBB[1][2]);
+        label_backup=label;
         if(!roi.is_empty()) roi.crop(viewBB[0][0],viewBB[0][1],viewBB[0][2],viewBB[1][0],viewBB[1][1],viewBB[1][2]);
 
         dim[0]=img.width(); dim[1]=img.height(); dim[2]=img.depth();
@@ -213,7 +215,7 @@ public:
 
     void undo()
     {
-
+        label_backup.swap(label);
     }
 
     void getPlaneDirections(int dir[2],const unsigned int area)
@@ -417,7 +419,6 @@ public:
                 }
             }
         }
-
     }
 
 
@@ -438,6 +439,7 @@ public:
     {
         if(roi.is_empty()) return;
         if(label.is_empty()) return;
+        label_backup=label;
         if(overwrite)  { cimg_forXYZ(label,x,y,z) if(roi(x,y,z)==1) label(x,y,z)=l; }
         else  { cimg_forXYZ(label,x,y,z) if(roi(x,y,z)==1 && label(x,y,z)==0) label(x,y,z)=l; }
     }
@@ -446,6 +448,7 @@ public:
     {
         if(roi.is_empty()) return;
         if(label.is_empty()) return;
+        label_backup=label;
         cimg_forXYZ(label,x,y,z) if(roi(x,y,z)==1 && label(x,y,z)==l) label(x,y,z)=0;
     }
 

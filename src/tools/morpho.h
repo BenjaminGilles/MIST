@@ -64,7 +64,6 @@ public slots:
 
     void Dilate()
     {
-        qDebug()<<"Dilate";
         img->roi.dilate(2*morphoSizespin->value()+1);
         mprview->Render(true);
     }
