@@ -38,7 +38,7 @@ public slots:
 
 private:
     void setup(const QString filename);
-    QGroupBox* createTools();
+    QWidget* createTools();
 
     viewTool* view;
     labelTableTool* labelTable;

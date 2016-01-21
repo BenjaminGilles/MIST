@@ -26,12 +26,14 @@ public:
         connect(computeAct, SIGNAL(triggered()),this, SLOT(ComputeMesh()));
 
         computeSpin=new QSpinBox(parent);
+        computeSpin->setToolTip(tr("Resolution"));
+        computeSpin->setStatusTip(tr("Marching cube resolution (0 for image resolution)"));
         computeSpin->setRange(0, 10000);
         computeSpin->setValue(0);
 
         QToolBar* ToolBar=new QToolBar(parent);
-        ToolBar->addWidget(computeSpin);
         ToolBar->addAction(computeAct);
+        ToolBar->addWidget(computeSpin);
         ToolBar->addSeparator();
 
         QAction* saveAct = new QAction(/*QIcon(":save"),*/tr("Save isosurfaces"), parent);

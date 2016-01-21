@@ -27,25 +27,6 @@ public:
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
-        QGroupBox *groupBox = new QGroupBox(tr("Labels"));
-
-        QLabel* opacityLabel=new QLabel(tr("Opacity: "),parent);
-        QSlider* opacitySlider=new QSlider(Qt::Horizontal,parent);
-        opacitySlider->setPageStep ( 1 );
-        opacitySlider->setRange(0,100);
-        opacitySlider->setValue(50);
-        connect(opacitySlider, SIGNAL( valueChanged(int) ), this, SLOT( changeOpacity(int) ) );
-
-        QAction *borderAct = new QAction(QIcon(":plain"),tr("Plain/Boundary"), parent);
-        borderAct->setCheckable(true);
-        borderAct->setStatusTip(tr("Switch between plain/boundary visualization"));
-        connect(borderAct, SIGNAL( toggled (bool) ), this, SLOT( changePlainVisu(bool) ) );
-
-        QToolBar* ToolBarOpacity=new QToolBar(parent);
-        ToolBarOpacity->addWidget(opacityLabel);
-        ToolBarOpacity->addWidget(opacitySlider);
-        ToolBarOpacity->addAction(borderAct);
-
         table=new QTableWidget(0,3,parent);
         table->setColumnWidth ( 0, 30);
         table->horizontalHeader()->setSectionResizeMode(1,QHeaderView::Stretch);
@@ -66,6 +47,18 @@ public:
         DelLabelAct->setStatusTip(tr("Remove ROI from Label"));
         connect(DelLabelAct, SIGNAL(triggered()),this, SLOT(DelLabel()));
 
+        QSlider* opacitySlider=new QSlider(Qt::Horizontal,parent);
+        opacitySlider->setStatusTip(tr("Label Opacity"));
+        opacitySlider->setPageStep ( 1 );
+        opacitySlider->setRange(0,100);
+        opacitySlider->setValue(50);
+        connect(opacitySlider, SIGNAL( valueChanged(int) ), this, SLOT( changeOpacity(int) ) );
+
+        QAction *borderAct = new QAction(QIcon(":plain"),tr("Plain/Boundary"), parent);
+        borderAct->setCheckable(true);
+        borderAct->setStatusTip(tr("Switch between plain/boundary visualization"));
+        connect(borderAct, SIGNAL( toggled (bool) ), this, SLOT( changePlainVisu(bool) ) );
+
         QActionGroup* GeometryGroup = new QActionGroup(parent);
         GeometryGroup->addAction(SelectLabelAct);
         GeometryGroup->addAction(AddLabelAct);
@@ -73,15 +66,18 @@ public:
 
         QToolBar* ToolBar=new QToolBar(parent);
         ToolBar->addActions(GeometryGroup->actions());
+        ToolBar->addWidget(opacitySlider);
+        ToolBar->addAction(borderAct);
 
         QVBoxLayout *layout = new QVBoxLayout();
-        layout->addWidget(ToolBarOpacity);
         layout->addWidget(table);
         layout->addWidget(ToolBar);
 
-        groupBox->setLayout(layout);
+//        QGroupBox *w = new QGroupBox(tr("Labels"));
+        QWidget *w = new QWidget(parent);
+        w->setLayout(layout);
 
-        return groupBox;
+        return w;
     }
 
 

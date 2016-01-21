@@ -22,42 +22,44 @@ public:
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
         QAction* DilateBut = new QAction(tr("Dilate"), parent);
-        DilateBut->setStatusTip(tr("Dilate"));
+        DilateBut->setStatusTip(tr("Dilate selection"));
         connect(DilateBut, SIGNAL(triggered()),this, SLOT(Dilate()));
+
         QAction* ErodeBut = new QAction(tr("Erode"), parent);
-        ErodeBut->setStatusTip(tr("Erode"));
+        ErodeBut->setStatusTip(tr("Erode selection"));
         connect(ErodeBut, SIGNAL(triggered()),this, SLOT(Erode()));
-        QLabel* sizelab=new QLabel(tr("Size: "),parent);
+
         morphoSizespin=new QSpinBox(parent);
+        morphoSizespin->setToolTip(tr("Size of the structuring element"));
+        morphoSizespin->setStatusTip(tr("Size of the structuring element"));
         morphoSizespin->setRange(0, 100);
         morphoSizespin->setValue(1);
+
         QToolBar* ToolBar1=new QToolBar(parent);
         ToolBar1->addAction(DilateBut);
         ToolBar1->addSeparator();
         ToolBar1->addAction(ErodeBut);
         ToolBar1->addSeparator();
-        ToolBar1->addWidget(sizelab);
         ToolBar1->addWidget(morphoSizespin);
         ToolBar1->addSeparator();
 
         QAction* FillHolesBut = new QAction(tr("FillHoles"), parent);
-        FillHolesBut->setStatusTip(tr("FillHoles"));
+        FillHolesBut->setStatusTip(tr("Fill holes in selection"));
         connect(FillHolesBut, SIGNAL(triggered()),this, SLOT(FillHoles()));
+
+        QAction* InvertBut = new QAction(tr("Invert"), parent);
+        InvertBut->setStatusTip(tr("Invert selection"));
+        connect(InvertBut, SIGNAL(triggered()),this, SLOT(Invert()));
+
         QToolBar* ToolBar2=new QToolBar(parent);
         ToolBar2->addAction(FillHolesBut);
         ToolBar2->addSeparator();
-
-        QAction* InvertBut = new QAction(tr("Invert"), parent);
-        InvertBut->setStatusTip(tr("Invert"));
-        connect(InvertBut, SIGNAL(triggered()),this, SLOT(Invert()));
-        QToolBar* ToolBar3=new QToolBar(parent);
-        ToolBar3->addAction(InvertBut);
-        ToolBar3->addSeparator();
+        ToolBar2->addAction(InvertBut);
+        ToolBar2->addSeparator();
 
         QVBoxLayout *layout = new QVBoxLayout();
         layout->addWidget(ToolBar1);
         layout->addWidget(ToolBar2);
-        layout->addWidget(ToolBar3);
         layout->addStretch();
 
         QWidget *w = new QWidget(parent);

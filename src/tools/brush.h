@@ -18,13 +18,13 @@ public:
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
-        QLabel* sizelab=new QLabel(tr("Size: "),parent);
         QSpinBox* sizespin=new QSpinBox(parent);
+        sizespin->setToolTip(tr("Brush size"));
+        sizespin->setStatusTip(tr("Brush size"));
         sizespin->setRange(0, 100);
         sizespin->setValue(img->brushSize);
         connect(sizespin, SIGNAL( valueChanged(int) ), this , SLOT( setBrushSize(int) ) );
         QToolBar *toolbar = new QToolBar(parent);
-        toolbar ->addWidget(sizelab);
         toolbar ->addWidget(sizespin);
         toolbar ->addSeparator();
 

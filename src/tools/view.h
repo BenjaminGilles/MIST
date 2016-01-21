@@ -21,8 +21,6 @@ public:
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
-        QGroupBox *groupBox = new QGroupBox(tr("View"));
-
         rangew = new QRangeWidget(parent);
         connect(rangew, SIGNAL( rangeChanged(int,int) ), this, SLOT( changeRange(int,int) ) );
 
@@ -52,8 +50,11 @@ public:
         layout->addWidget(rangew);
         layout->addWidget(ToolBar);
 
-        groupBox->setLayout(layout);
-        return groupBox;
+//        QGroupBox *w = new QGroupBox(tr("View"));
+        QWidget *w = new QWidget(parent);
+        w->setLayout(layout);
+
+        return w;
     }
 
 

@@ -17,7 +17,7 @@
         <file>icons/Maximize-icon.png</file>
         <file>icons/Memory-Card-icon.png</file>
         <file>icons/Minimize-icon.png</file>
-        <file>icons/Photo-icon.png</file>
+        <file alias="image">icons/Photo-icon.png</file>
         <file>icons/Picasa-icon.png</file>
         <file alias="remove">icons/Remove-icon.png</file>
         <file alias="resize">icons/Resize-icon.png</file>

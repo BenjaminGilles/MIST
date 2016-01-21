@@ -121,12 +121,10 @@ void MainWindow::setup(const QString filename)
     for(unsigned int i=0;i<3;++i)    viewMenu->addAction(mprview->showViewAct[i]);
     viewMenu->addAction(mprview->showSlices);
 
-    view = new viewTool(mprview,&img);
     labelTable = new labelTableTool(mprview,&img);
 
-    QVBoxLayout *layout = new QVBoxLayout;
-    layout->addWidget(view->getMenu());
-    layout->addWidget(labelTable->getMenu());
+    QVBoxLayout *layout = new QVBoxLayout();
+    layout->addWidget(labelTable->getMenu(this));
     layout->addWidget(createTools());
 //    layout->addStretch();
     QWidget *newWidget = new QWidget(this);
@@ -168,29 +166,36 @@ void MainWindow::reinit()
     labelTable->updateTable();
 }
 
-QGroupBox *MainWindow::createTools()
+QWidget *MainWindow::createTools()
 {
+    view = new viewTool(mprview,&img);
     morpho = new morphoTool(mprview,&img);
     brush = new brushTool(mprview,&img);
     regionGrowing = new regionGrowingTool(mprview,&img);
     marchingCubes = new marchingCubesTool(mprview,&img);
 
-    QGroupBox *groupBox = new QGroupBox(tr("Tools"));
-
     QTabWidget* tab = new QTabWidget(this);
     tab->setIconSize(QSize(30,30));
-    tab->addTab(morpho->getMenu(),tr(""));
-    tab->setTabIcon(0,QIcon(":morpho"));
+
+    tab->addTab(view->getMenu(this),tr(""));
+    tab->setTabIcon(0,QIcon(":image"));
+    tab->setTabToolTip(0,tr("Image Tools"));
+
+    tab->addTab(morpho->getMenu(this),tr(""));
+    tab->setTabIcon(1,QIcon(":morpho"));
     tab->setTabToolTip(1,tr("Morphological operators"));
-    tab->addTab(brush->getMenu(),tr(""));
-    tab->setTabIcon(1,QIcon(":brush"));
-    tab->setTabToolTip(1,tr("Brush tool"));
-    tab->addTab(regionGrowing->getMenu(),tr(""));
-    tab->setTabIcon(2,QIcon(":regionGrow"));
-    tab->setTabToolTip(2,tr("Region growing"));
-    tab->addTab(marchingCubes->getMenu(),tr(""));
-    tab->setTabIcon(3,QIcon(":mesh"));
-    tab->setTabToolTip(3,tr("Mesh tools"));
+
+    tab->addTab(brush->getMenu(this),tr(""));
+    tab->setTabIcon(2,QIcon(":brush"));
+    tab->setTabToolTip(2,tr("Brush tool"));
+
+    tab->addTab(regionGrowing->getMenu(this),tr(""));
+    tab->setTabIcon(3,QIcon(":regionGrow"));
+    tab->setTabToolTip(3,tr("Region growing"));
+
+    tab->addTab(marchingCubes->getMenu(this),tr(""));
+    tab->setTabIcon(4,QIcon(":mesh"));
+    tab->setTabToolTip(4,tr("Mesh tools"));
 
     connect(tab, SIGNAL(currentChanged(int)),this, SLOT(ToolChanged(int)));
 
@@ -198,10 +203,12 @@ QGroupBox *MainWindow::createTools()
     layout->addWidget(tab);
 //    layout->addStretch();
 
-    groupBox->setLayout(layout);
-    groupBox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Fixed);
+    QGroupBox *w = new QGroupBox(tr("Tools"),this);
+//    QWidget *w = new QWidget(this);
+    w->setLayout(layout);
+    w->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Fixed);
 
-    return groupBox;
+    return w;
 }
 
 void MainWindow::ToolChanged(int index)
