@@ -8,7 +8,7 @@
         <file alias="openimg">icons/File-Pictures-icon.png</file>
         <file alias="opensegm">icons/File-Pie-icon.png</file>
         <file alias="resetZoom">icons/Full-Screen-2-icon.png</file>
-        <file>icons/Full-View-icon.png</file>
+        <file alias="resample">icons/Full-View-icon.png</file>
         <file alias="undo">icons/Left-2-2-icon.png</file>
         <file alias="regionGrow">icons/Magic-Wand-icon.png</file>
         <file>icons/Magnifi-Glass-2-2-icon.png</file>

@@ -215,16 +215,16 @@ void MainWindow::ToolChanged(int index)
 {
     switch(index)
     {
-    case 0:
+    case 1:
         mprview->setViewMode(GraphView::Morpho);
         break;
-    case 1:
+    case 2:
         mprview->setViewMode(GraphView::Brush);
         break;
-    case 2:
+    case 3:
         mprview->setViewMode(GraphView::RegionGrowing);
         break;
-    case 3:
+    case 4:
         mprview->setViewMode(GraphView::MarchingCubes);
         break;
     default:

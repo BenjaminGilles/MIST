@@ -236,9 +236,9 @@ public:
         }
     }
 
-    void crop()
+    bool crop()
     {
-        if(img.is_empty()) return;
+        if(img.is_empty()) return false;
         img.crop(viewBB[0][0],viewBB[0][1],viewBB[0][2],viewBB[1][0],viewBB[1][1],viewBB[1][2]);
         if(!label.is_empty()) label.crop(viewBB[0][0],viewBB[0][1],viewBB[0][2],viewBB[1][0],viewBB[1][1],viewBB[1][2]);
         label_backup=label;
@@ -253,8 +253,44 @@ public:
 
         intensityRange[0]=img.min();
         intensityRange[1]=img.max();
+        return true;
     }
 
+    bool resampleDim(const unsigned int newDim[3])
+    {
+        if(img.is_empty()) return false;
+        if(newDim[0]==dim[0] && newDim[1]==dim[1] && newDim[2]==dim[2]) return false;
+        img.resize(newDim[0],newDim[1],newDim[2],-100,3);
+        roi.resize(newDim[0],newDim[1],newDim[2]);
+        label.resize(newDim[0],newDim[1],newDim[2]);
+
+        intensityRange[0]=img.min(); intensityRange[1]=img.max();
+        real t[3],newt[3];
+        for(unsigned int i=0;i<3;i++)
+        {
+            voxelSize[i]*=(real)dim[i]/(real)newDim[i];
+            slice[i]=floor((real)slice[i]*(real)newDim[i]/(real)dim[i]);
+            coord[i]=floor((real)coord[i]*(real)newDim[i]/(real)dim[i]);
+            seed[i]=floor((real)seed[i]*(real)newDim[i]/(real)dim[i]);
+            viewBB[0][i]=floor((real)viewBB[0][i]*(real)newDim[i]/(real)dim[i]);
+            viewBB[1][i]=floor((real)viewBB[1][i]*(real)newDim[i]/(real)dim[i]);
+            dimBB[i]=viewBB[1][i]-viewBB[0][i]+1;
+            t[i]=((real)newDim[i]-(real)dim[i])/(2.*(real)newDim[i]);
+        }
+        imageCoordToPos(newt,t);
+        for(unsigned int i=0;i<3;i++) translation[i]=newt[i];
+
+        dim[0]=img.width(); dim[1]=img.height(); dim[2]=img.depth();
+
+        return true;
+    }
+
+    bool resampleVoxelSize(const real newVSize[3])
+    {
+        unsigned int newDim[3];
+        for(unsigned int i=0;i<3;i++) newDim[i]=round(voxelSize[i]*(real)dim[i]/newVSize[i]);
+        return resampleDim(newDim);
+    }
 
     void undo()
     {

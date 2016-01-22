@@ -12,9 +12,15 @@ class imageTool:public baseTool
     Q_OBJECT
 
 public:
-    imageTool(MPRImageView* v,image<T>* i):baseTool(v,i),zoomAct(NULL),oldViewMode(GraphView::Navigation),rangew(NULL)  {}
+    imageTool(MPRImageView* v,image<T>* i):baseTool(v,i),zoomAct(NULL),oldViewMode(GraphView::Navigation),rangew(NULL)
+    {
+        for(unsigned int i=0;i<3;i++)         vsize_edit[i] =NULL;
+        for(unsigned int i=0;i<3;i++)         dim_edit[i] =NULL;
+    }
     ~imageTool()
     {
+        for(unsigned int i=0;i<3;i++) if(vsize_edit[i]!=NULL) delete vsize_edit[i];
+        for(unsigned int i=0;i<3;i++) if(dim_edit[i]!=NULL) delete dim_edit[i];
         if(zoomAct!=NULL) delete zoomAct;
         if(rangew!=NULL) delete rangew;
     }
@@ -46,11 +52,51 @@ public:
         QToolBar* ToolBar=new QToolBar(parent);
         ToolBar->addActions(GeometryGroup->actions());
 
+        QToolBar *dim_bar = new QToolBar();
+        QLabel* dim_txt=new QLabel(tr("Dimensions:"),parent);
+        dim_bar->addWidget(dim_txt);
+        dim_bar->addSeparator();
+        for(unsigned int i=0;i<3;i++)
+        {
+            dim_edit[i] = new QLineEdit(parent);
+//            dim_edit[i]->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Minimum);
+            dim_edit[i]->setAlignment(Qt::AlignCenter);
+            dim_edit[i]->setFixedWidth(50);
+            dim_bar->addWidget(dim_edit[i]);
+            dim_bar->addSeparator();
+        }
+        QAction* dim_Act = new QAction(QIcon(":resample"),tr("Resample image"), parent);
+        dim_Act->setStatusTip(tr("Resample image"));
+        connect(dim_Act, SIGNAL(triggered()),this, SLOT(resampleDim()));
+        dim_bar->setIconSize(QSize(20,20));
+        dim_bar->addAction(dim_Act);
+
+        QToolBar *vsize_bar = new QToolBar();
+        QLabel* vsize_txt=new QLabel(tr("Voxelsize:"),parent);
+        vsize_bar->addWidget(vsize_txt);
+        vsize_bar->addSeparator();
+        for(unsigned int i=0;i<3;i++)
+        {
+            vsize_edit[i] = new QLineEdit(parent);
+//            vsize_edit[i]->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Minimum);
+            vsize_edit[i]->setAlignment(Qt::AlignCenter);
+            vsize_edit[i]->setFixedWidth(50);
+            vsize_bar->addWidget(vsize_edit[i]);
+            vsize_bar->addSeparator();
+        }
+        QAction* vsize_Act = new QAction(QIcon(":resample"),tr("Resample image"), parent);
+        vsize_Act->setStatusTip(tr("Resample image"));
+        connect(vsize_Act, SIGNAL(triggered()),this, SLOT(resampleVoxelSize()));
+        vsize_bar->setIconSize(QSize(20,20));
+        vsize_bar->addAction(vsize_Act);
+
         QVBoxLayout *layout = new QVBoxLayout();
         layout->addWidget(rangew);
         layout->addWidget(ToolBar);
+        layout->addWidget(dim_bar);
+        layout->addWidget(vsize_bar);
 
-//        QGroupBox *w = new QGroupBox(tr("View"));
+        //        QGroupBox *w = new QGroupBox(tr("View"));
         QWidget *w = new QWidget(parent);
         w->setLayout(layout);
 
@@ -76,8 +122,48 @@ public slots:
 
     void crop()
     {
-        img->crop();
-        mprview->reinit();
+        if(img->crop())
+        {
+            reinit();
+            mprview->reinit();
+            // todo: regiongrowing reinit
+        }
+    }
+
+    void resampleDim()
+    {
+        bool ok;
+        unsigned int newDim[3];
+        for(unsigned int i=0;i<3;i++)
+        {
+            newDim[i]=dim_edit[i]->text().toUInt(&ok);
+            if(!ok) {newDim[i]=img->dim[i]; dim_edit[i]->setText(QString::number(img->dim[i])); }
+        }
+        if(img->resampleDim(newDim))
+        {
+        }
+        {
+            reinit();
+            mprview->reinit();
+            // todo: regiongrowing reinit
+        }
+    }
+
+    void resampleVoxelSize()
+    {
+        bool ok;
+        real newVSize[3];
+        for(unsigned int i=0;i<3;i++)
+        {
+            newVSize[i]=(real)vsize_edit[i]->text().toDouble(&ok);
+            if(!ok) {newVSize[i]=img->voxelSize[i]; vsize_edit[i]->setText(QString::number(img->voxelSize[i])); }
+        }
+        if(img->resampleVoxelSize(newVSize))
+        {
+            reinit();
+            mprview->reinit();
+            // todo: regiongrowing reinit
+        }
     }
 
     void reinit()
@@ -85,6 +171,8 @@ public slots:
         T _min=0,_max=0;
         img->getIntensityRangeLimits(_min,_max);
         rangew->setRangeLimits((int)floor((double)_min), (int)ceil((double)_max));
+        for(unsigned int i=0;i<3;i++)         dim_edit[i]->setText(QString::number(img->dim[i]));
+        for(unsigned int i=0;i<3;i++)         vsize_edit[i]->setText(QString::number(img->voxelSize[i]));
     }
 
     void changeRange(int _min, int _max)
@@ -99,6 +187,8 @@ private:
     QAction *zoomAct;
     GraphView::Mode oldViewMode;
     QRangeWidget *rangew ;
+    QLineEdit* vsize_edit[3];
+    QLineEdit* dim_edit[3];
 
 };
 
