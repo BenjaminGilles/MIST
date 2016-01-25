@@ -2,68 +2,54 @@
 #define __QSLICE_H
 
 #include <QObject>
-#include <QGLWidget>
-#include <QTimer>
+#include <QWidget>
+#include <QSplitter>
 #include <QLineEdit>
 #include <QHBoxLayout>
 #include <QDebug>
 
-class QMouseEvent ;
+// double slider inspired from: from http://forum.qtfr.org/discussion/3830/qt4-bi-slider-avec-qsplitter-probleme-de-deplacement-du-qsplitter
 
-// double slider: from http://forum.qtfr.org/discussion/3830/qt4-bi-slider-avec-qsplitter-probleme-de-deplacement-du-qsplitter
-
-class QSlice : public QGLWidget
+class QSlice : public QWidget
 {
     Q_OBJECT
 
-    private:
-        int		_currentMin;	// valeur minimale courante
-        int		_currentMax;	// valeur maximale courante
-        int		_valueMin;		// valeur minimale limite
-        int		_valueMax;		// valeur maximale limite
-        double		_cursorSize;	// taille du curseur
-        QTimer		_refreshTimer;	// timer de maj
-        double 		_mouseX;		// derni?re position de la souris
-        int 		_moved;			// indice de l'?l?ment d?plac?
-        bool 		_onMin;			// sur le curseur min
-        bool 		_onMax;			// sur le curseur max
+public:
+    QSlice(QWidget *parent = NULL);
+    ~QSlice();
 
-    public:
-        QSlice(QWidget *parent = NULL);	// constructeur
-        ~QSlice();						// destructeur
+    QSize sizeHint() const;
 
-        QSize sizeHint() const;			// taille par defaut
+    int currentMin() const {return _currentMin;}
+    int currentMax() const {return _currentMax;}
+    int valueMin() const {return _valueMin;}
+    int valueMax() const {return _valueMax;}
 
-        //getters
-        int currentMin() const {return _currentMin;}
-        int currentMax() const {return _currentMax;}
-        int valueMin() const {return _valueMin;}
-        int valueMax() const {return _valueMax;}
+    void setValueMin(int valueMin);
+    void setValueMax(int valueMax);
 
-        //setters
-        void setValueMin(int valueMin);
-        void setValueMax(int valueMax);
+signals:
+    void minChanged(int val);
+    void maxChanged(int val);
 
-    public slots:
-        void setCurrentMin(int currentMin);
-        void setCurrentMax(int currentMax);
-        void printVals();
+public slots:
+    void setCurrentMin(int currentMin);
+    void setCurrentMax(int currentMax);
+    void updateValues(int pos, int index);
+    void printVals();
 
-    protected:
-        void initializeGL();
-        void paintGL();
-        void resizeGL(int width, int height);
-        void paintEvent(QPaintEvent *event);
-        void mousePressEvent(QMouseEvent *event);
-        void mouseReleaseEvent(QMouseEvent *event);
-        void mouseMoveEvent(QMouseEvent *event);
+protected:
+    void updateSizes();
 
-        void drawCursor(double pos, int id);// id = 1 -> min
-                                            // id = 2 -> max
+    int		_currentMin;
+    int		_currentMax;
+    int		_valueMin;
+    int		_valueMax;
 
-    signals:
-        void minChanged(int val);
-        void maxChanged(int val);
+    QWidget		*_before;
+    QWidget		*_selection;
+    QWidget		*_after;
+    QSplitter	*_splitter;
 };
 
 //-----------------------------------------------------------------------------------------------//
