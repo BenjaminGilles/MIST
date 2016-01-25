@@ -292,6 +292,15 @@ public:
         return resampleDim(newDim);
     }
 
+    bool mirror(const char axes)
+    {
+        if(img.is_empty()) return false;
+        img.mirror(axes);
+        roi.mirror(axes);
+        label.mirror(axes);
+        return true;
+    }
+
     void undo()
     {
         label_backup.swap(label);

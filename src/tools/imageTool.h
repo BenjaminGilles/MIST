@@ -90,11 +90,34 @@ public:
         vsize_bar->setIconSize(QSize(20,20));
         vsize_bar->addAction(vsize_Act);
 
+
+        QToolBar *mirror_bar = new QToolBar();
+        QLabel* mirror_txt=new QLabel(tr("Mirror:"),parent);
+        mirror_bar->addWidget(mirror_txt);
+        mirror_bar->addSeparator();
+        QAction* mirrorX_Act = new QAction(tr("X"), parent);
+        mirrorX_Act->setStatusTip(tr("Mirror image along X"));
+        connect(mirrorX_Act, SIGNAL(triggered()),this, SLOT(mirrorX()));
+        mirror_bar->addAction(mirrorX_Act);
+        mirror_bar->addSeparator();
+        QAction* mirrorY_Act = new QAction(tr("Y"), parent);
+        mirrorY_Act->setStatusTip(tr("Mirror image along Y"));
+        connect(mirrorY_Act, SIGNAL(triggered()),this, SLOT(mirrorY()));
+        mirror_bar->addAction(mirrorY_Act);
+        mirror_bar->addSeparator();
+        QAction* mirrorZ_Act = new QAction(tr("Z"), parent);
+        mirrorZ_Act->setStatusTip(tr("Mirror image along Z"));
+        connect(mirrorZ_Act, SIGNAL(triggered()),this, SLOT(mirrorZ()));
+        mirror_bar->addAction(mirrorZ_Act);
+        mirror_bar->addSeparator();
+
+
         QVBoxLayout *layout = new QVBoxLayout();
         layout->addWidget(rangew);
         layout->addWidget(ToolBar);
         layout->addWidget(dim_bar);
         layout->addWidget(vsize_bar);
+        layout->addWidget(mirror_bar);
 
         //        QGroupBox *w = new QGroupBox(tr("View"));
         QWidget *w = new QWidget(parent);
@@ -126,9 +149,24 @@ public slots:
         {
             reinit();
             mprview->reinit();
-            // todo: regiongrowing reinit
+            // todo: reinit of regiongrowing min/max
         }
     }
+
+
+    void mirrorX()
+    {
+        if(img->mirror('x')) mprview->reinit();
+    }
+    void mirrorY()
+    {
+        if(img->mirror('y')) mprview->reinit();
+    }
+    void mirrorZ()
+    {
+        if(img->mirror('z')) mprview->reinit();
+    }
+
 
     void resampleDim()
     {
@@ -141,11 +179,9 @@ public slots:
         }
         if(img->resampleDim(newDim))
         {
-        }
-        {
             reinit();
             mprview->reinit();
-            // todo: regiongrowing reinit
+            // todo: reinit of regiongrowing min/max
         }
     }
 
@@ -162,7 +198,7 @@ public slots:
         {
             reinit();
             mprview->reinit();
-            // todo: regiongrowing reinit
+            // todo: reinit of regiongrowing min/max
         }
     }
 
