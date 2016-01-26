@@ -222,6 +222,7 @@ void MainWindow::ToolChanged(int index)
         mprview->setViewMode(GraphView::Brush);
         break;
     case 3:
+        regionGrowing->reinit(); // hack to propagate min/max changes from imagetools
         mprview->setViewMode(GraphView::RegionGrowing);
         break;
     case 4:

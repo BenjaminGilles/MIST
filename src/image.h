@@ -442,14 +442,14 @@ public:
 
         if(is2D)
         {
+            int P[3],dir[2]; getPlaneDirections(dir,seed[3]);
+            P[seed[3]]=seed[seed[3]];
+            CImg<T> c_img(dim[dir[0]],dim[dir[1]]);
+            CImg<unsigned char> c_label(dim[dir[0]],dim[dir[1]]);
+            CImg<bool> c_roi(dim[dir[0]],dim[dir[1]]); c_roi.fill(false);
+
             if(img(seed[0],seed[1],seed[2])<=range[1] && img(seed[0],seed[1],seed[2])>=range[0])
             {
-                int P[3],dir[2]; getPlaneDirections(dir,seed[3]);
-                P[seed[3]]=seed[seed[3]];
-                CImg<T> c_img(dim[dir[0]],dim[dir[1]]);
-                CImg<unsigned char> c_label(dim[dir[0]],dim[dir[1]]);
-                CImg<bool> c_roi(dim[dir[0]],dim[dir[1]]); c_roi.fill(false);
-
                 cimg_forXY(c_img,x,y)
                 {
                     P[dir[0]]=x;
@@ -471,19 +471,19 @@ public:
                     bool tru=true;
                     (+c_roi).draw_fill(seed[dir[0]],seed[dir[1]],0,&tru,1.0f,c_roi,0);
                 }
-                // paste
-                cimg_forXY(c_roi,x,y)
-                {
-                    P[dir[0]]=x;
-                    P[dir[1]]=y;
-                    roi(P[0],P[1],P[2])=c_roi(x,y);
-                }
-
-                //                CImg<bool> sepImg=get_plane(separationPoints,seed,seed[3],BB,separationLinkTol2);
-                //                if(seed[3]==1)      {  cimg_forXY(sepImg,z,y) if(sepImg(z,y)) pselect(z,y,0)=false; (+pselect).draw_fill(seed[2],seed[1],0,&white,1.0f,pselect,0); }
-                //                else if(seed[3]==2) {  cimg_forXY(sepImg,x,z) if(sepImg(x,z)) pselect(x,z,0)=false; (+pselect).draw_fill(seed[0],seed[2],0,&white,1.0f,pselect,0); }
-                //                else if(seed[3]==3) {  cimg_forXY(sepImg,x,y) if(sepImg(x,y)) pselect(x,y,0)=false; (+pselect).draw_fill(seed[0],seed[1],0,&white,1.0f,pselect,0); }
             }
+            // paste
+            cimg_forXY(c_roi,x,y)
+            {
+                P[dir[0]]=x;
+                P[dir[1]]=y;
+                roi(P[0],P[1],P[2])=c_roi(x,y);
+            }
+
+            //                CImg<bool> sepImg=get_plane(separationPoints,seed,seed[3],BB,separationLinkTol2);
+            //                if(seed[3]==1)      {  cimg_forXY(sepImg,z,y) if(sepImg(z,y)) pselect(z,y,0)=false; (+pselect).draw_fill(seed[2],seed[1],0,&white,1.0f,pselect,0); }
+            //                else if(seed[3]==2) {  cimg_forXY(sepImg,x,z) if(sepImg(x,z)) pselect(x,z,0)=false; (+pselect).draw_fill(seed[0],seed[2],0,&white,1.0f,pselect,0); }
+            //                else if(seed[3]==3) {  cimg_forXY(sepImg,x,y) if(sepImg(x,y)) pselect(x,y,0)=false; (+pselect).draw_fill(seed[0],seed[1],0,&white,1.0f,pselect,0); }
         }
         else
         {
@@ -641,11 +641,11 @@ public:
     {
         int P[3],dir[2]; getPlaneDirections(dir,area);
         CImg<unsigned char> sel(dim[dir[0]],dim[dir[1]]);
+        P[area]=slice[area];
         cimg_forXY(sel,x,y)
         {
             P[dir[0]]=x;
             P[dir[1]]=y;
-            P[area]=slice[area];
             sel(x,y)=roi(P[0],P[1],P[2]);
         }
         unsigned char fillColor = (unsigned char)2;
@@ -654,18 +654,30 @@ public:
         {
             P[dir[0]]=x;
             P[dir[1]]=y;
-            P[area]=slice[area];
             if( sel(x,y)==2 ) roi(P[0],P[1],P[2])=0;
             else roi(P[0],P[1],P[2])=1;
         }
     }
 
-    void FillHoles3D()
+    void FillHoles()
     {
         CImg<unsigned char> sel = roi;
         unsigned char fillColor = (unsigned char)2;
         sel.draw_fill(0,0,0,&fillColor); // flood fill from voxel (0,0,0)
         cimg_foroff(sel,off) if( sel[off]==2 ) roi[off]=0; else roi[off]=1;
+    }
+
+    void InvertROI2D(const unsigned int area)
+    {
+        int P[3],dir[2]; getPlaneDirections(dir,area);
+        P[area]=slice[area];
+        for(unsigned int y=0;y<dim[dir[1]];++y)
+            for(unsigned int x=0;x<dim[dir[0]];++x)
+            {
+                P[dir[0]]=x;
+                P[dir[1]]=y;
+                if(roi(P[0],P[1],P[2])) roi(P[0],P[1],P[2])=0; else roi(P[0],P[1],P[2])=1;
+            }
     }
 
     void InvertROI()

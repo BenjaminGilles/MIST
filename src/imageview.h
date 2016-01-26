@@ -333,21 +333,6 @@ public slots:
     }
 
     GraphView::Mode getViewMode()    { return viewMode; }
-/*
- // use focus instead
-    void changeArea(int area)
-    {
-        for(int i=0;i<3;++i)
-        {
-            bool onArea=(i==area)?true:false;
-            if(view[i]->graphView->onArea!=onArea)
-            {
-                view[i]->graphView->onArea=onArea;
-                view[i]->graphView->Render(false);
-            }
-        }
-    }
-*/
 
 private:
     ImageView* setupImageView(const unsigned int area)
