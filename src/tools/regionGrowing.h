@@ -28,19 +28,19 @@ public:
         connect(rangew, SIGNAL( rangeChanged(int,int) ), this, SLOT( changeRange(int,int) ) );
 
         QAction* is2DAct = new QAction(tr("2D"), parent);
-        is2DAct->setStatusTip(tr("Restrict growing to 2D"));
+        is2DAct->setStatusTip(tr("Restrict growing to 2D ?"));
         is2DAct->setCheckable(true);
         is2DAct->setChecked(is2D);
         connect(is2DAct, SIGNAL(toggled(bool)),this, SLOT(Is2D(bool)));
 
         QAction* InLabelAct = new QAction(tr("Inside label"), parent);
-        InLabelAct->setStatusTip(tr("Restrict growing to label"));
+        InLabelAct->setStatusTip(tr("Restrict growing to label ?"));
         InLabelAct->setCheckable(true);
         InLabelAct->setChecked(inLabel);
         connect(InLabelAct, SIGNAL(toggled(bool)),this, SLOT(InLabel(bool)));
 
         QAction* ConnectedAct = new QAction(tr("Connected"), parent);
-        ConnectedAct->setStatusTip(tr("Enforce connectivity"));
+        ConnectedAct->setStatusTip(tr("Enforce connectivity ?"));
         ConnectedAct->setCheckable(true);
         ConnectedAct->setChecked(connected);
         connect(ConnectedAct, SIGNAL(toggled(bool)),this, SLOT(Connected(bool)));

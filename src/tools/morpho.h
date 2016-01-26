@@ -22,7 +22,7 @@ public:
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
         QAction* is2DAct = new QAction(tr("2D"), parent);
-        is2DAct->setStatusTip(tr("Restrict operations to 2D planes"));
+        is2DAct->setStatusTip(tr("Restrict operations to 2D planes ?"));
         is2DAct->setCheckable(true);
         is2DAct->setChecked(is2D);
         connect(is2DAct, SIGNAL(toggled(bool)),this, SLOT(Is2D(bool)));
