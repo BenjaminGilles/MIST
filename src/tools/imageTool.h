@@ -118,6 +118,7 @@ public:
         layout->addWidget(dim_bar);
         layout->addWidget(vsize_bar);
         layout->addWidget(mirror_bar);
+        layout->addStretch();
 
         //        QGroupBox *w = new QGroupBox(tr("View"));
         QWidget *w = new QWidget(parent);

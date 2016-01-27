@@ -26,6 +26,7 @@ HEADERS  += mainwindow.h\
     tools/morpho.h \
     tools/brush.h \
     tools/regionGrowing.h \
+    tools/landmarks.h \
     tools/marchingCubes.h
 
 INCLUDEPATH += $$CIMG_PATH

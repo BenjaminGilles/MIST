@@ -61,7 +61,7 @@ public:
     double labelOpacity;
     double roiOpacity;
     bool labelBorderOnly;
-    enum Mode {Navigation,Zoom,Brush,RegionGrowing,Morpho,MarchingCubes};
+    enum Mode {Navigation,Zoom,Brush,RegionGrowing,Morpho,Landmarks,MarchingCubes};
     Mode mode;
     enum Qt::MouseButton pressed;
     Qt::KeyboardModifiers pressedModifiers;
@@ -106,6 +106,7 @@ signals:
     void sliceChanged(int val);
     void selectionDone();
     void seedSelected();
+    void LandmarkSet();
 
     //void mousePressed(QMouseEvent *mouseEvent);
     //void mouseReleased(QMouseEvent *mouseEvent);
@@ -163,6 +164,7 @@ public:
         connect(graphView, SIGNAL( sliceChanged(int) ), parent, SLOT( Render() ) );
 
         connect(graphView, SIGNAL( seedSelected() ), parent, SLOT( selectSeed() ) );
+        connect(graphView, SIGNAL( LandmarkSet() ), parent, SLOT( Render() ) );
 
         connect(graphView, SIGNAL( selectionDone() ), parent, SLOT( reinit() ) );
 

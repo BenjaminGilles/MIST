@@ -12,6 +12,7 @@
 #include <tools/brush.h>
 #include <tools/marchingCubes.h>
 #include <tools/regionGrowing.h>
+#include <tools/landmarks.h>
 
 #ifdef USEGL
 #include <widgets/glWidget.h>
@@ -50,6 +51,7 @@ private:
     brushTool* brush;
     regionGrowingTool* regionGrowing;
     marchingCubesTool* marchingCubes;
+    landmarksTool* landmarks;
 
 #ifdef USEGL
     GLWidget* glwidget;

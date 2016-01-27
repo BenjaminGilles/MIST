@@ -25,6 +25,7 @@ MainWindow::~MainWindow()
     delete brush;
     delete regionGrowing;
     delete marchingCubes;
+    delete landmarks;
 #ifdef USEGL
     delete glwidget;
 # endif
@@ -188,6 +189,7 @@ QWidget *MainWindow::createTools()
     morpho = new morphoTool(mprview,&img);
     brush = new brushTool(mprview,&img);
     regionGrowing = new regionGrowingTool(mprview,&img);
+    landmarks = new landmarksTool(mprview,&img);
     marchingCubes = new marchingCubesTool(mprview,&img);
 
     QTabWidget* tab = new QTabWidget(this);
@@ -209,9 +211,13 @@ QWidget *MainWindow::createTools()
     tab->setTabIcon(3,QIcon(":regionGrow"));
     tab->setTabToolTip(3,tr("Region growing"));
 
+    tab->addTab(landmarks->getMenu(this),tr(""));
+    tab->setTabIcon(4,QIcon(":landmark"));
+    tab->setTabToolTip(4,tr("Landmarks"));
+
     tab->addTab(marchingCubes->getMenu(this),tr(""));
-    tab->setTabIcon(4,QIcon(":mesh"));
-    tab->setTabToolTip(4,tr("Mesh tools"));
+    tab->setTabIcon(5,QIcon(":mesh"));
+    tab->setTabToolTip(5,tr("Mesh tools"));
 
     connect(tab, SIGNAL(currentChanged(int)),this, SLOT(ToolChanged(int)));
 
@@ -243,6 +249,9 @@ void MainWindow::ToolChanged(int index)
         mprview->setViewMode(GraphView::RegionGrowing);
         break;
     case 4:
+        mprview->setViewMode(GraphView::Landmarks);
+        break;
+    case 5:
         mprview->setViewMode(GraphView::MarchingCubes);
         break;
     default:

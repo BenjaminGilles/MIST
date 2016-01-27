@@ -16,6 +16,7 @@ static const unsigned char LINECOLORS[3][3]={{ 255,0,0 },{ 0,255,0 },{ 0,0,255 }
 static const unsigned char BRUSHCOLOR[4]={255,0,0,255}; // BGRA
 static const unsigned char ROICOLOR[3]={50,50,255};
 static const unsigned char SEEDCOLOR[3]={0,255,0};
+static const unsigned char LANDMARKCOLOR[3]={255,100,0};
 static const unsigned int MAXLABELS = 256;
 
 class  MESH
@@ -50,6 +51,17 @@ public:
         cimg_forXY(vertices,j,k) center[k]+=vertices(j,k);
         center[0]/=(double)vertices.width();    center[1]/=(double)vertices.width();    center[2]/=(double)vertices.width();
     }
+};
+
+
+class LANDMARK
+{
+public:
+    LANDMARK(const std::string n=std::string("new")):name(n) { for(unsigned int i=0;i<3;++i)        position[i]=0; }
+    LANDMARK(const real p[3],const std::string n=std::string("new")):name(n) { for(unsigned int i=0;i<3;++i)        position[i]=p[i]; }
+    ~LANDMARK()    {}
+    real position[3];
+    std::string name;
 };
 
 template<typename T>
@@ -88,6 +100,9 @@ public:
     // meshes
     std::vector<MESH> meshes;
 
+    // landmarks
+    std::vector<LANDMARK> landmarks;
+    int selectedLandmark;
 
     image()
     {
@@ -103,6 +118,7 @@ public:
         palette = tmp.HSVtoRGB();
         brushSize=10;
         intensityRange[0]=intensityRange[1]=0;
+        selectedLandmark=-1;
     }
     
     ~image()
@@ -262,6 +278,19 @@ public:
             p[i]=0;
             for(unsigned int j=0;j<3;j++)
                 p[i]+=translation[i]+rotation[i][j]*(real)p0[j]*voxelSize[j];
+        }
+    }
+
+    template<class t>
+    void posToImageCoord(t p[3],const real p0[3]) const
+    {
+        for(unsigned int i=0;i<3;++i)
+        {
+            real P=0;
+            for(unsigned int j=0;j<3;j++)
+                P+=rotation[j][i]*(p0[j]-translation[j]);
+            P/=voxelSize[i];
+            p[i]=(t)P; // todo round
         }
     }
 
@@ -437,7 +466,22 @@ public:
                 .draw_line(x,y+1,0,x,y+size,0,SEEDCOLOR);
     }
     
-    
+    void overlayLandmarks(CImg<unsigned char>& cutplane,const unsigned int area,const unsigned int size=2)
+    {
+        int dir[2]; getPlaneDirections(dir,area);
+        int p[3];
+        for(unsigned int i=0;i<landmarks.size();i++)
+        {
+            posToImageCoord(p,landmarks[i].position);
+            if(p[area]!=(int)slice[area]) continue;
+            int x=p[dir[0]]-viewBB[0][dir[0]],y=p[dir[1]]-viewBB[0][dir[1]];
+            cutplane.draw_line(x-size,y,0,x-1,y,0,LANDMARKCOLOR)
+                    .draw_line(x+1,y,0,x+size,y,0,LANDMARKCOLOR)
+                    .draw_line(x,y-size,0,x,y-1,0,LANDMARKCOLOR)
+                    .draw_line(x,y+1,0,x,y+size,0,LANDMARKCOLOR);
+        }
+    }
+
     void selectBrush(const unsigned int area,const bool add)
     {
         int dir[2]; getPlaneDirections(dir,area);
@@ -462,6 +506,16 @@ public:
         seed[3]=area;
     }
 
+    void selectLandmark(const int index=-1)
+    {
+        selectedLandmark=index;
+    }
+
+    void setLandmark()
+    {
+        if(selectedLandmark<0 || selectedLandmark>=(int)landmarks.size()) return;
+        imageCoordToPos(landmarks[selectedLandmark].position,coord);
+    }
 
     //,const CImgList<unsigned int> &separationPoints,const unsigned int separationLinkTol2
     void regionGrowing(const T range[2],  const bool inLabel,const bool connected,const bool is2D)
@@ -714,6 +768,16 @@ public:
         cimg_foroff(roi,off) if( roi[off] ) roi[off]=0; else roi[off]=1;
     }
 
+
+    void addLandmark()
+    {
+        landmarks.push_back(LANDMARK());
+    }
+
+    void delLandmark(const unsigned int index)
+    {
+        landmarks.erase(landmarks.begin()+index);
+    }
 
 
     unsigned int marchingCubes(const int res=0)

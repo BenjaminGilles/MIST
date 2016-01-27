@@ -87,6 +87,7 @@ void GraphView::drawBackground(QPainter *painter, const QRectF &rect)
     if(showSlice[0]) img->overlaySliceTrace(im,area,0);
     if(showSlice[1]) img->overlaySliceTrace(im,area,1);
     if(mode==RegionGrowing) img->overlaySeed(im,area);
+    else if(mode==Landmarks) img->overlayLandmarks(im,area);
 
     im.permute_axes("cxyz");
     QImage qimage = QImage(im.data(),im.height(),im.depth(),3*im.height(),QImage::Format_RGB888);
@@ -178,6 +179,11 @@ void GraphView::mousePressEvent(QMouseEvent *mouseEvent)
     {
         img->selectSeed(area);
         emit seedSelected();
+    }
+    else if(mode==Landmarks && pressed==Qt::LeftButton)
+    {
+        img->setLandmark();
+        emit LandmarkSet();
     }
 }
 

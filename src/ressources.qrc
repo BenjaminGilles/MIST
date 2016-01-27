@@ -33,5 +33,10 @@
         <file>icons/Cube-Molecule-icon.png</file>
         <file alias="mesh">icons/Cube-Molecule-2-icon.png</file>
         <file alias="morpho">icons/Bacteria-icon.png</file>
+        <file alias="landmark">icons/Hand-Touch-2-icon.png</file>
+        <file>icons/Finger-DragFourSides-icon.png</file>
+        <file>icons/Cursor-Move-icon.png</file>
+        <file alias="download">icons/Data-Download-icon.png</file>
+        <file alias="upload">icons/Data-Upload-icon.png</file>
     </qresource>
 </RCC>
