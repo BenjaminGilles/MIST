@@ -233,7 +233,7 @@ void GLWidget::Render()
 
 
 
-void GLAPIENTRY pickMatrixGL(GLdouble x, GLdouble y, GLdouble deltax, GLdouble deltay,GLint viewport[4])
+void pickMatrixGL(GLdouble x, GLdouble y, GLdouble deltax, GLdouble deltay,GLint viewport[4])
 {
     if (deltax <= 0 || deltay <= 0) return;
     /* Translate and scale the picked region to the entire window */

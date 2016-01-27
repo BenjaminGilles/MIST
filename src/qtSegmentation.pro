@@ -32,7 +32,7 @@ INCLUDEPATH += $$CIMG_PATH
 
 RESOURCES += ressources.qrc
 
-DEFINES += USEGL
+#DEFINES += USEGL
 contains(DEFINES, USEGL)
 {
 QT       += opengl
