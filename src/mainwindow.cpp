@@ -9,7 +9,6 @@
 #include <QTabWidget>
 
 
-
 MainWindow::MainWindow(const QString filename)
 {
     this->resize(800,600);
@@ -26,6 +25,9 @@ MainWindow::~MainWindow()
     delete brush;
     delete regionGrowing;
     delete marchingCubes;
+#ifdef USEGL
+    delete glwidget;
+# endif
 
     delete fileMenu;
     delete editMenu;
@@ -116,7 +118,21 @@ void MainWindow::setup(const QString filename)
 
     mprview = new MPRImageView(this,&img);
     connect(mprview, SIGNAL(statusChanged(const QString)), this, SLOT(changeStatus(const QString)));
+#ifdef USEGL
+    glwidget = new GLWidget(&img.meshes,&img.palette,this);
+    QHBoxLayout *mainLayout = new QHBoxLayout;
+    mainLayout->addWidget(glwidget);
+    mainLayout->addWidget(mprview);
+    QWidget *mainWidget = new QWidget(this);
+    mainWidget->setLayout(mainLayout);
+    setCentralWidget(mainWidget);
+    glwidget->setVisible(false);
+    glwidget->setXRotation(15 * 16);
+    glwidget->setYRotation(345 * 16);
+    glwidget->setZRotation(0 * 16);
+# else
     setCentralWidget(mprview);
+# endif
 
     for(unsigned int i=0;i<3;++i)    viewMenu->addAction(mprview->showViewAct[i]);
     viewMenu->addAction(mprview->showSlices);
@@ -213,6 +229,7 @@ QWidget *MainWindow::createTools()
 
 void MainWindow::ToolChanged(int index)
 {
+
     switch(index)
     {
     case 1:
@@ -233,6 +250,10 @@ void MainWindow::ToolChanged(int index)
         break;
     }
 
+#ifdef USEGL
+    mprview->setVisible(!(mprview->getViewMode()==GraphView::MarchingCubes));
+    glwidget->setVisible(mprview->getViewMode()==GraphView::MarchingCubes);
+#endif
 
 }
 

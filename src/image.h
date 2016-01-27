@@ -18,6 +18,40 @@ static const unsigned char ROICOLOR[3]={50,50,255};
 static const unsigned char SEEDCOLOR[3]={0,255,0};
 static const unsigned int MAXLABELS = 256;
 
+class  MESH
+{
+public:
+    CImgList<unsigned int> faces;
+    CImg<float> vertices;
+    CImg<float> normals;
+    double center[3];
+
+    bool save(const std::string& objFile)
+    {
+        if(!vertices.width()) return false;
+
+        std::ofstream objStream (objFile.c_str());
+        if(!objStream.is_open()) return false;
+        cimg_forX(vertices,j) objStream<<"v "<<vertices(j,0)<<" "<<vertices(j,1)<<" "<<vertices(j,2)<<std::endl;
+        cimglist_for(faces,l)
+        {
+            objStream<<"f";
+            cimg_forY(faces(l),j)  objStream<<" "<<(1+faces(l)(j));
+            objStream<<std::endl;
+        }
+        objStream.close();
+        return true;
+    }
+
+    void update()
+    {
+        center[0]=0;    center[1]=0;    center[2]=0;
+        if(!vertices.width()) return;
+        cimg_forXY(vertices,j,k) center[k]+=vertices(j,k);
+        center[0]/=(double)vertices.width();    center[1]/=(double)vertices.width();    center[2]/=(double)vertices.width();
+    }
+};
+
 template<typename T>
 class image
 {
@@ -52,11 +86,6 @@ public:
     std::string labelFileName;
 
     // meshes
-    struct MESH
-    {
-        CImgList<unsigned int> faces;
-        CImg<float> vertices;
-    };
     std::vector<MESH> meshes;
 
 
@@ -710,6 +739,7 @@ public:
             // flip faces
             cimglist_for(meshes[i].faces,l) meshes[i].faces(l).mirror('y');
             nbfaces+=meshes[i].faces.size();
+            meshes[i].update();
         }
         return nbfaces;
     }
@@ -717,20 +747,7 @@ public:
     bool saveObjs(const std::string& path)
     {
         for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
-            if(meshes[i].vertices.width())
-            {
-                std::string objFile=path+std::string("/")+labelName[i]+std::string(".obj");
-                std::ofstream objStream (objFile.c_str());
-                if(!objStream.is_open()) return false;
-                cimg_forX(meshes[i].vertices,j) objStream<<"v "<<meshes[i].vertices(j,0)<<" "<<meshes[i].vertices(j,1)<<" "<<meshes[i].vertices(j,2)<<std::endl;
-                cimglist_for(meshes[i].faces,l)
-                {
-                    objStream<<"f";
-                    cimg_forY(meshes[i].faces(l),j)  objStream<<" "<<(1+meshes[i].faces(l)(j));
-                    objStream<<std::endl;
-                }
-                objStream.close();
-            }
+            meshes[i].save(path+std::string("/")+labelName[i]+std::string(".obj"));
         return true;
     }
 

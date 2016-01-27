@@ -13,6 +13,10 @@
 #include <tools/marchingCubes.h>
 #include <tools/regionGrowing.h>
 
+#ifdef USEGL
+#include <widgets/glWidget.h>
+# endif
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -46,6 +50,10 @@ private:
     brushTool* brush;
     regionGrowingTool* regionGrowing;
     marchingCubesTool* marchingCubes;
+
+#ifdef USEGL
+    GLWidget* glwidget;
+# endif
 
     image<T> img;
     MPRImageView* mprview;

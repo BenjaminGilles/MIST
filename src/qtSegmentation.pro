@@ -32,7 +32,13 @@ INCLUDEPATH += $$CIMG_PATH
 
 RESOURCES += ressources.qrc
 
-#LIBS += -L/usr/X11R6/lib -lm -lpthread
+DEFINES += USEGL
+contains(DEFINES, USEGL)
+{
+QT       += opengl
+HEADERS  += widgets/glWidget.h
+SOURCES +=  widgets/glWidget.cpp
+}
 
 #QMAKE_CXXFLAGS+= -fopenmp
 #QMAKE_LFLAGS +=  -fopenmp
