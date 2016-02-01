@@ -101,7 +101,8 @@ public slots:
     void cellClicked(int r,int /*c*/)
     {
         img->selectLandmark(r);
-        mprview->Render(true,true);
+        mprview->updateSliders();
+        mprview->Render();
     }
 
 //    void cellDoubleClicked(int r,int c)

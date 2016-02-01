@@ -185,6 +185,11 @@ void GraphView::mousePressEvent(QMouseEvent *mouseEvent)
         img->setLandmark();
         emit LandmarkSet();
     }
+    else if(pressed==Qt::RightButton)
+    {
+        img->setSlice(img->coord);
+        emit allSlicesChanged();
+    }
 }
 
 //void GraphView::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
@@ -232,6 +237,11 @@ void GraphView::mouseMoveEvent(QMouseEvent *mouseEvent)
     else            emit statusChanged(tr("(%1,%2,%3) : %4").arg(img->coord[0]).arg(img->coord[1]).arg(img->coord[2]).arg(val));
 
     if(mode==Brush && pressed==Qt::LeftButton) {img->selectBrush(area,!pressedModifiers.testFlag(Qt::ShiftModifier)); updateBackground=true;}
+    else if(pressed==Qt::RightButton)
+    {
+        img->setSlice(img->coord);
+        emit allSlicesChanged();
+    }
 
     Render(updateBackground);
 }

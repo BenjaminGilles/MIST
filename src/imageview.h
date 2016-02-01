@@ -104,6 +104,7 @@ public slots:
 signals:
     void statusChanged(const QString);
     void sliceChanged(int val);
+    void allSlicesChanged();
     void selectionDone();
     void seedSelected();
     void LandmarkSet();
@@ -159,6 +160,9 @@ public:
 
         connect(this, SIGNAL( sliceChanged(int) ), graphView, SLOT( setSlice(int) ) );
         connect(this, SIGNAL( sliceChanged(int) ), parent, SLOT( Render() ) );
+
+        connect(graphView, SIGNAL( allSlicesChanged() ), parent, SLOT( updateSliders() ) );
+        connect(graphView, SIGNAL( allSlicesChanged() ), parent, SLOT( Render() ) );
 
         connect(graphView, SIGNAL( sliceChanged(int) ), this , SLOT( setSlider(int) ) );
         connect(graphView, SIGNAL( sliceChanged(int) ), parent, SLOT( Render() ) );
@@ -320,10 +324,14 @@ public slots:
         updateGeometry();
     }
 
-    void Render(bool updateBackground=true,bool updateSliders=false)
+    void updateSliders() // render all sliders
+    {
+        for(unsigned int i=0;i<3;++i) view[i]->setSlider(img->slice[i]);
+    }
+
+    void Render(bool updateBackground=true)
     {
         for(unsigned int i=0;i<3;++i) view[i]->graphView->Render(updateBackground);
-        if(updateSliders) for(unsigned int i=0;i<3;++i) view[i]->setSlider(img->slice[i]);
     }
 
     void updateLayout() { mprlayout->invalidate(); }

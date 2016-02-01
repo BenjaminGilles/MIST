@@ -686,6 +686,13 @@ public:
         return img(coord[0],coord[1],coord[2]);
     }
 
+    bool setSlice(const int p[3])
+    {
+        bool changed=false;
+        for(unsigned int i=0;i<3;++i) if(setSlice(p[i],i)) changed=true;
+        return changed;
+    }
+
     bool setSlice(const int d,const unsigned int area)
     {
         int oldval=slice[area];
