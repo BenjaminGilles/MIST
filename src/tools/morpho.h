@@ -116,13 +116,13 @@ public slots:
 
     void Dilate()
     {
-        img->roi.dilate(2*morphoSizespin->value()+1);
+        img->dilate(2*morphoSizespin->value()+1);
         mprview->Render(true);
     }
 
     void Erode()
     {
-        img->roi.erode(2*morphoSizespin->value()+1);
+        img->erode(2*morphoSizespin->value()+1);
         mprview->Render(true);
     }
 

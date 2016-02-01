@@ -539,7 +539,7 @@ public:
         {
             P[dir[0]]=X;
             P[dir[1]]=Y;
-            roi(P[0],P[1],P[2])=add;
+            if(!labelLock[label(P[0],P[1],P[2])]) roi(P[0],P[1],P[2])=add;
         }
     }
     
@@ -593,7 +593,9 @@ public:
             {
                 P[dir[0]]=x;
                 P[dir[1]]=y;
-                roi(P[0],P[1],P[2])=c_roi(x,y);
+
+                if(!labelLock[label(P[0],P[1],P[2])] && c_roi(x,y)) roi(P[0],P[1],P[2])=true;
+                else roi(P[0],P[1],P[2])=false;
             }
 
             //                CImg<bool> sepImg=get_plane(separationPoints,seed,seed[3],BB,separationLinkTol2);
@@ -605,6 +607,7 @@ public:
         {
             roi.fill(false);
             if(img(seed[0],seed[1],seed[2])<=range[1] && img(seed[0],seed[1],seed[2])>=range[0])
+                if(!labelLock[label(seed[0],seed[1],seed[2])])
             {
                 // todo: openmp ?
                 if(inLabel)
@@ -621,6 +624,7 @@ public:
                     bool tru=true;
                     (+roi).draw_fill(seed[0],seed[1],seed[2],&tru,1.0f,roi,0);
                 }
+                unselectLockedLabels();
             }
         }
     }
@@ -758,7 +762,22 @@ public:
         for(unsigned int i=0;i<3;++i) if(i!=area) { viewBB[0][i]=0; viewBB[1][i]=dim[i]-1;  dimBB[i]=dim[i];  }
     }
 
+    void unselectLockedLabels()
+    {
+        cimg_foroff(label,off) if(roi[off]) if(labelLock[label[off]]) roi[off]=false;
+    }
 
+    void dilate(const unsigned int size)
+    {
+        roi.dilate(size);
+        unselectLockedLabels();
+    }
+
+    void erode(const unsigned int size)
+    {
+        roi.erode(size);
+        unselectLockedLabels();
+    }
 
     void FillHoles2D(const unsigned int area)
     {
@@ -777,8 +796,8 @@ public:
         {
             P[dir[0]]=x;
             P[dir[1]]=y;
-            if( sel(x,y)==2 ) roi(P[0],P[1],P[2])=0;
-            else roi(P[0],P[1],P[2])=1;
+            if(!labelLock[label(P[0],P[1],P[2])] && sel(x,y)!=2) roi(P[0],P[1],P[2])=true;
+            else roi(P[0],P[1],P[2])=false;
         }
     }
 
@@ -788,6 +807,7 @@ public:
         unsigned char fillColor = (unsigned char)2;
         sel.draw_fill(0,0,0,&fillColor); // flood fill from voxel (0,0,0)
         cimg_foroff(sel,off) if( sel[off]==2 ) roi[off]=0; else roi[off]=1;
+        unselectLockedLabels();
     }
 
     void InvertROI2D(const unsigned int area)
@@ -799,13 +819,15 @@ public:
             {
                 P[dir[0]]=x;
                 P[dir[1]]=y;
-                if(roi(P[0],P[1],P[2])) roi(P[0],P[1],P[2])=0; else roi(P[0],P[1],P[2])=1;
+                if(!labelLock[label(P[0],P[1],P[2])] && !roi(P[0],P[1],P[2])) roi(P[0],P[1],P[2])=true;
+                else roi(P[0],P[1],P[2])=false;
             }
     }
 
     void InvertROI()
     {
         cimg_foroff(roi,off) if( roi[off] ) roi[off]=0; else roi[off]=1;
+        unselectLockedLabels();
     }
 
 
