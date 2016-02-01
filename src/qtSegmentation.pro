@@ -33,13 +33,14 @@ INCLUDEPATH += $$CIMG_PATH
 
 RESOURCES += ressources.qrc
 
-#DEFINES += USEGL
-contains(DEFINES, USEGL)
-{
-QT       += opengl
-HEADERS  += widgets/glWidget.h
-SOURCES +=  widgets/glWidget.cpp
+DEFINES -= USEGL
+contains(DEFINES, USEGL) {
+    message( "opengl used..." )
+    QT       += opengl
+    HEADERS  += widgets/glWidget.h
+    SOURCES  += widgets/glWidget.cpp
 }
+
 
 #QMAKE_CXXFLAGS+= -fopenmp
 #QMAKE_LFLAGS +=  -fopenmp

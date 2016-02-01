@@ -248,6 +248,8 @@ void perspectiveGL( GLdouble fovY, GLdouble aspect, GLdouble zNear, GLdouble zFa
     glFrustum( -fW, fW, -fH, fH, zNear, zFar );
 }
 
+
+
 void GLWidget::setupView()
 {
     GLint rendermode; glGetIntegerv(GL_RENDER_MODE,&rendermode);

@@ -17,6 +17,7 @@ static const unsigned char BRUSHCOLOR[4]={255,0,0,255}; // BGRA
 static const unsigned char ROICOLOR[3]={50,50,255};
 static const unsigned char SEEDCOLOR[3]={0,255,0};
 static const unsigned char LANDMARKCOLOR[3]={255,100,0};
+static const unsigned char SELECTEDLANDMARKCOLOR[3]={100,255,0};
 static const unsigned int MAXLABELS = 256;
 
 class  MESH
@@ -103,6 +104,7 @@ public:
     // landmarks
     std::vector<LANDMARK> landmarks;
     int selectedLandmark;
+    std::string landmarksFileName;
 
     image()
     {
@@ -187,6 +189,7 @@ public:
         }
 
         imageFileName=file;
+        QFileInfo fileInfo(QString(imageFileName.c_str()));         currentPath=fileInfo.path().toStdString();
         return true;
     }
     
@@ -269,6 +272,40 @@ public:
         }
         else return false;
     }
+
+    bool loadLandmarks(const char* filename=NULL)
+    {
+        std::string nameFile;
+        if(!filename) nameFile=landmarksFileName; else { nameFile=std::string(filename); landmarksFileName=nameFile; }
+        if(fopen(nameFile.c_str(), "r")==NULL) return false;
+        std::ifstream iStream (nameFile.c_str(), std::ifstream::in);
+        if(iStream.is_open())
+        {
+            char txt[1024]; real p[3];
+            landmarks.clear();
+            while(!iStream.eof()) { iStream >> p[0]; iStream >> p[1]; iStream >> p[2]; iStream.getline(txt,1024); if(!iStream.eof()) landmarks.push_back(LANDMARK(p,std::string(txt+1)));}
+            iStream.close();
+            return true;
+        }
+        else return false;
+    }
+
+    bool saveLandmarks(const char* filename=NULL)
+    {
+        std::string nameFile;
+        if(!filename) nameFile=landmarksFileName; else { nameFile=std::string(filename); landmarksFileName=nameFile; }
+        std::ofstream fileStream (nameFile.c_str());
+        if(fileStream.is_open())
+        {
+            for(unsigned int i=0;i<landmarks.size();i++) {fileStream<<landmarks[i].position[0]<<" "<<landmarks[i].position[1]<<" "<<landmarks[i].position[2]<<" "<<landmarks[i].name.c_str()<<std::endl;}
+            fileStream.close();
+            return true;
+        }
+        else return false;
+    }
+
+
+
 
     template<class t>
     void imageCoordToPos(real p[3],const t p0[3]) const
@@ -368,7 +405,7 @@ public:
     {
         if(area==0)      {dir[0]=2; dir[1]=1; } // ZY
         else if(area==1) {dir[0]=0; dir[1]=2; } // XZ
-        else if(area==2) {dir[0]=0; dir[1]=1; } // XY
+        else {dir[0]=0; dir[1]=1; } // XY
     }
     
     void getIntensityRangeLimits(T& _min,T& _max)
@@ -475,10 +512,16 @@ public:
             posToImageCoord(p,landmarks[i].position);
             if(p[area]!=(int)slice[area]) continue;
             int x=p[dir[0]]-viewBB[0][dir[0]],y=p[dir[1]]-viewBB[0][dir[1]];
-            cutplane.draw_line(x-size,y,0,x-1,y,0,LANDMARKCOLOR)
-                    .draw_line(x+1,y,0,x+size,y,0,LANDMARKCOLOR)
-                    .draw_line(x,y-size,0,x,y-1,0,LANDMARKCOLOR)
-                    .draw_line(x,y+1,0,x,y+size,0,LANDMARKCOLOR);
+            if((int)i==selectedLandmark)
+                cutplane.draw_line(x-size,y,0,x-1,y,0,SELECTEDLANDMARKCOLOR)
+                        .draw_line(x+1,y,0,x+size,y,0,SELECTEDLANDMARKCOLOR)
+                        .draw_line(x,y-size,0,x,y-1,0,SELECTEDLANDMARKCOLOR)
+                        .draw_line(x,y+1,0,x,y+size,0,SELECTEDLANDMARKCOLOR);
+            else
+                cutplane.draw_line(x-size,y,0,x-1,y,0,LANDMARKCOLOR)
+                        .draw_line(x+1,y,0,x+size,y,0,LANDMARKCOLOR)
+                        .draw_line(x,y-size,0,x,y-1,0,LANDMARKCOLOR)
+                        .draw_line(x,y+1,0,x,y+size,0,LANDMARKCOLOR);
         }
     }
 
@@ -506,16 +549,6 @@ public:
         seed[3]=area;
     }
 
-    void selectLandmark(const int index=-1)
-    {
-        selectedLandmark=index;
-    }
-
-    void setLandmark()
-    {
-        if(selectedLandmark<0 || selectedLandmark>=(int)landmarks.size()) return;
-        imageCoordToPos(landmarks[selectedLandmark].position,coord);
-    }
 
     //,const CImgList<unsigned int> &separationPoints,const unsigned int separationLinkTol2
     void regionGrowing(const T range[2],  const bool inLabel,const bool connected,const bool is2D)
@@ -769,15 +802,32 @@ public:
     }
 
 
+
     void addLandmark()
     {
-        landmarks.push_back(LANDMARK());
+        std::stringstream ss; ss<<landmarks.size();
+        real p[3]; imageCoordToPos(p,slice);
+        landmarks.push_back(LANDMARK(p,std::string("landmark ")+ss.str()));
     }
 
     void delLandmark(const unsigned int index)
     {
         landmarks.erase(landmarks.begin()+index);
     }
+
+    void selectLandmark(const int index=-1)
+    {
+        selectedLandmark=index;
+        posToImageCoord(slice,landmarks[selectedLandmark].position);
+        for(unsigned int i=0;i<3;++i)  clampWithinBB(slice[i],i);
+    }
+
+    void setLandmark()
+    {
+        if(selectedLandmark<0 || selectedLandmark>=(int)landmarks.size()) return;
+        imageCoordToPos(landmarks[selectedLandmark].position,coord);
+    }
+
 
 
     unsigned int marchingCubes(const int res=0)

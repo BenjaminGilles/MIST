@@ -309,8 +309,16 @@ void MainWindow::saveAs()
 
 void MainWindow::loadSegmentation()
 {
+    QString path(img.currentPath.c_str());
+    if(img.labelFileName.size()) path=QString(img.labelFileName.c_str());
+    else if(img.imageFileName.size())
+    {
+        QFileInfo fileInfo(img.imageFileName.c_str());
+        path = fileInfo.path()+QString("/")+fileInfo.baseName()+QString("_label.raw");
+    }
+
     QString fileName = QFileDialog::getOpenFileName(this,
-                                                    tr("Load Segmentation"),QString(img.currentPath.c_str()),
+                                                    tr("Load Segmentation"),path,
                                                     tr("Images (*.mhd *.dcm *.hdr *.raw)"));
     if (fileName.isEmpty()) return;
 
@@ -326,8 +334,16 @@ void MainWindow::loadSegmentation()
 
 void MainWindow::saveAsSegmentation()
 {
+    QString path(img.currentPath.c_str());
+    if(img.labelFileName.size()) path=QString(img.labelFileName.c_str());
+    else if(img.imageFileName.size())
+    {
+        QFileInfo fileInfo(img.imageFileName.c_str());
+        path = fileInfo.path()+QString("/")+fileInfo.baseName()+QString("_label.raw");
+    }
+
     QString fileName = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Segmentation"), QString(img.currentPath.c_str()),
+                                                    tr("Save Segmentation"), path,
                                                     tr("Images (*.mhd *.hdr)"));
     if (fileName.isEmpty()) return;
 

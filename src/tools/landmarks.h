@@ -13,6 +13,8 @@
 #include <QActionGroup>
 #include <QToolBar>
 #include <QMessageBox>
+#include <QFileDialog>
+
 
 class landmarksTool:public baseTool
 {
@@ -96,9 +98,10 @@ public slots:
         }
     }
 
-    void cellClicked(int r,int c)
+    void cellClicked(int r,int /*c*/)
     {
         img->selectLandmark(r);
+        mprview->Render(true,true);
     }
 
 //    void cellDoubleClicked(int r,int c)
@@ -107,12 +110,34 @@ public slots:
 
     void Load()
     {
+        QString fileName = QFileDialog::getOpenFileName(NULL,
+                                                        tr("Load Landmarks"),QString(img->currentPath.c_str()),
+                                                        tr("Landmarks (*.txt)"));
+        if (fileName.isEmpty()) return;
 
+        if(img->loadLandmarks(fileName.toStdString().c_str()))
+        {
+            updateTable();
+            mprview->Render();
+            emit statusChanged(tr("Opened '%1'").arg(fileName));
+        }
+        else  QMessageBox::warning(NULL, tr("QtSegmentation"), tr("Cannot open '%1'").arg(fileName));
     }
 
     void Save()
     {
+        QString path(img->currentPath.c_str());
+        if(img->landmarksFileName.size()) path=QString(img->landmarksFileName.c_str());
+        QString fileName = QFileDialog::getSaveFileName(NULL,
+                                                        tr("Save Landmarks"), path,
+                                                        tr("Landmarks (*.txt)"));
+        if (fileName.isEmpty()) return;
 
+        if(img->saveLandmarks(fileName.toStdString().c_str()))
+        {
+            emit statusChanged(tr("Saved '%1'").arg(fileName));
+        }
+        else  QMessageBox::warning(NULL, tr("QtSegmentation"), tr("Cannot save '%1'").arg(fileName));
     }
 
     void Add()

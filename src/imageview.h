@@ -320,9 +320,10 @@ public slots:
         updateGeometry();
     }
 
-    void Render(bool updateBackground=true)
+    void Render(bool updateBackground=true,bool updateSliders=false)
     {
         for(unsigned int i=0;i<3;++i) view[i]->graphView->Render(updateBackground);
+        if(updateSliders) for(unsigned int i=0;i<3;++i) view[i]->setSlider(img->slice[i]);
     }
 
     void updateLayout() { mprlayout->invalidate(); }

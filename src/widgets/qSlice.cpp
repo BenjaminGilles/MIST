@@ -130,3 +130,4 @@ void QSlice::printVals()
     qDebug() << "Slice [" << _currentMin << "-" << _currentMax <<"] \t"
              << "Total [" << _valueMin << "-" << _valueMax << "]";
 }
+
