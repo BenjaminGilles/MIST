@@ -37,15 +37,21 @@ public:
         connect(table, SIGNAL( cellDoubleClicked (int,int) ), this, SLOT( cellDoubleClicked(int,int) ) );
         updateTable();
 
-        QAction* SelectLabelAct = new QAction(QIcon(":select"),tr("Select"), parent);
-        SelectLabelAct->setStatusTip(tr("Select Label"));
+        QAction* SelectLabelAct = new QAction(QIcon(":select"),tr("Selec Labels"), parent);
+        SelectLabelAct->setStatusTip(tr("Select Labels"));
         connect(SelectLabelAct, SIGNAL(triggered()),this, SLOT(SelectLabel()));
-        QAction* AddLabelAct = new QAction(QIcon(":add"),tr("+"), parent);
-        AddLabelAct->setStatusTip(tr("Add ROI to Label"));
+        QAction* AddLabelAct = new QAction(QIcon(":add"),tr("Add ROI to Label"), parent);
+        AddLabelAct->setShortcut(QKeySequence(Qt::Key_Return));
+        AddLabelAct->setStatusTip(tr("Add ROI to Label (Return)"));
         connect(AddLabelAct, SIGNAL(triggered()),this, SLOT(AddLabel()));
-        QAction* DelLabelAct = new QAction(QIcon(":remove"),tr("-"), parent);
-        DelLabelAct->setStatusTip(tr("Remove ROI from Label"));
+        QAction* DelLabelAct = new QAction(QIcon(":remove"),tr("Remove ROI from Label"), parent);
+        DelLabelAct->setShortcut(QKeySequence(Qt::Key_Backspace));
+        DelLabelAct->setStatusTip(tr("Remove ROI from Label (Backspace)"));
         connect(DelLabelAct, SIGNAL(triggered()),this, SLOT(DelLabel()));
+        QAction* ClearLabelAct = new QAction(QIcon(":clear"),tr("Clear ROI"), parent);
+        ClearLabelAct->setShortcut(QKeySequence(Qt::Key_Space));
+        ClearLabelAct->setStatusTip(tr("Clear ROI (Space)"));
+        connect(ClearLabelAct, SIGNAL(triggered()),this, SLOT(ClearLabel()));
 
         QSlider* opacitySlider=new QSlider(Qt::Horizontal,parent);
         opacitySlider->setStatusTip(tr("Label Opacity"));
@@ -63,6 +69,7 @@ public:
         GeometryGroup->addAction(SelectLabelAct);
         GeometryGroup->addAction(AddLabelAct);
         GeometryGroup->addAction(DelLabelAct);
+        GeometryGroup->addAction(ClearLabelAct);
 
         QToolBar* ToolBar=new QToolBar(parent);
         ToolBar->addActions(GeometryGroup->actions());
@@ -172,6 +179,12 @@ public slots:
         std::vector<unsigned int> s=getSelectedLabels();
         if(s.size()!=1) { QMessageBox::warning(NULL, tr("qtSegmentation"),tr("Please select only one label")); return; }
         for(unsigned int i=0;i<s.size();i++)        img->delRoiFromLabel(s[0]);
+        img->clearRoi();
+        mprview->Render();
+    }
+
+    void ClearLabel()
+    {
         img->clearRoi();
         mprview->Render();
     }
