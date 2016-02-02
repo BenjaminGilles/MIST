@@ -647,6 +647,7 @@ public:
     {
         if(roi.is_empty()) return;
         if(label.is_empty()) return;
+        if(labelLock[l]) return;
         label_backup=label;
         cimg_forXYZ(label,x,y,z) if(roi(x,y,z)==1) if(!labelLock[label(x,y,z)]) label(x,y,z)=l;
     }
