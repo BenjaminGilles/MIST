@@ -312,9 +312,10 @@ public:
     {
         for(unsigned int i=0;i<3;++i)
         {
-            p[i]=0;
+            p[i]=translation[i];
             for(unsigned int j=0;j<3;j++)
-                p[i]+=translation[i]+rotation[i][j]*(real)p0[j]*voxelSize[j];
+                p[i]+=rotation[i][j]*(real)p0[j]*voxelSize[j];
+
         }
     }
 
