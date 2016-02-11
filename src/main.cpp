@@ -12,5 +12,5 @@ int main(int argc, char *argv[])
     MainWindow w(fileInfo.absoluteFilePath());
     w.show();
 
-    return a.exec(); // useless comment
+    return a.exec(); 
 }
