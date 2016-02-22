@@ -351,8 +351,8 @@ public:
         for(unsigned int i=0;i<3;++i)     {   slice[i]-=viewBB[0][i]; coord[i]-=viewBB[0][i]; seed[i]-=viewBB[0][i];  }
         resetViewBB();
 
-        intensityRange[0]=img.min();
-        intensityRange[1]=img.max();
+        T m=img.min(); if(intensityRange[0]<m) intensityRange[0]=m;
+        T M=img.max(); if(intensityRange[1]>M) intensityRange[1]=M;
         return true;
     }
 
@@ -383,7 +383,8 @@ public:
         label=newlabel;
         label_backup=newlabel;
 
-        intensityRange[0]=img.min(); intensityRange[1]=img.max();
+        T m=img.min(); if(intensityRange[0]<m) intensityRange[0]=m;
+        T M=img.max(); if(intensityRange[1]>M) intensityRange[1]=M;
         real t[3],newt[3];
         for(unsigned int i=0;i<3;i++)
         {

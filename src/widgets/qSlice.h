@@ -105,9 +105,9 @@ public slots:
     void setRangeLimits(int _min,int _max)
     {
         slider->setValueMin(_min);
-        slider->setValueMax(_max);
-        slider->setCurrentMin(_min);
-        slider->setCurrentMax(_max);
+        slider->setValueMax(_max);        
+//        slider->setCurrentMin(_min);
+//        slider->setCurrentMax(_max);
         updateText();
     }
 
