@@ -160,8 +160,8 @@ public:
         roi.resize(dim[0],dim[1],dim[2],1); roi.fill(0);
         if((int)dim[0]!=label.width() || (int)dim[1]!=label.height() || (int)dim[2]!=label.depth())
         {
-            // try to reuse existing label
-            label.resize(dim[0],dim[1],dim[2],1); /*label.fill(0);*/ label_backup=label;
+            label.resize(dim[0],dim[1],dim[2],1); label.fill(0); label_backup=label;
+            qDebug()<<"clean existing labels";
         }
         
         intensityRange[0]=img.min();
@@ -203,10 +203,37 @@ public:
         if(fopen(filename, "r")==NULL) return false;
         
         std::string file(filename);
-        if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"raw");
 
-        if (file.find(".hdr")!=std::string::npos)             label.load_analyze(file.c_str());
+        if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos)
+//                || file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)
+        {
+ //           if(file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"mhd");
+            real voxelSize2[3],translation2[3],rotation2[3][3];
+            label=load_metaimage<unsigned char,real>(file.c_str(),voxelSize2,translation2,&(rotation2[0][0]))(0);
+            if(label.width()!=(int)dim[0] || label.height()!=(int)dim[1] || label.depth()!=(int)dim[2])
+            {
+                qDebug()<<"warning: resample and transform loaded labels to fit current image";
+                CImg<unsigned char> newlabel(dim[0],dim[1],dim[2]); newlabel.fill(0);
+                real p[3];
+                cimg_forXYZ(newlabel,x,y,z)
+                {
+                    int P[3]={x,y,z};
+                    imageCoordToPos(p,P);
+                    // posToImageCoord for loaded image
+                    for(unsigned int i=0;i<3;++i)
+                    {
+                        real val=0;
+                        for(unsigned int j=0;j<3;j++) val+=rotation2[j][i]*(p[j]-translation2[j]);
+                        val/=voxelSize2[i];
+                        P[i]=round(val);
+                    }
+                    if(label.containsXYZC(P[0],P[1],P[2])) newlabel(x,y,z)=label(P[0],P[1],P[2]);
+                }
+                label=newlabel;
+            }
+        }
         else if (file.find(".raw")!=std::string::npos)        label.load_raw(file.c_str(),dim[0],dim[1],dim[2]);
+        else if (file.find(".hdr")!=std::string::npos)             label.load_analyze(file.c_str());
         else return false;
         
         if(label.is_empty()) return false;
