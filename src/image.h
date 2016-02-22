@@ -158,7 +158,11 @@ public:
         resetViewBB();
         
         roi.resize(dim[0],dim[1],dim[2],1); roi.fill(0);
-        if((int)dim[0]!=label.width() || (int)dim[1]!=label.height() || (int)dim[2]!=label.depth()) {label.resize(dim[0],dim[1],dim[2],1); label.fill(0); label_backup=label;}
+        if((int)dim[0]!=label.width() || (int)dim[1]!=label.height() || (int)dim[2]!=label.depth())
+        {
+            // try to reuse existing label
+            label.resize(dim[0],dim[1],dim[2],1); /*label.fill(0);*/ label_backup=label;
+        }
         
         intensityRange[0]=img.min();
         intensityRange[1]=img.max();
@@ -357,8 +361,27 @@ public:
         if(img.is_empty()) return false;
         if(newDim[0]==dim[0] && newDim[1]==dim[1] && newDim[2]==dim[2]) return false;
         img.resize(newDim[0],newDim[1],newDim[2],-100,3);
-        roi.resize(newDim[0],newDim[1],newDim[2]);
-        label.resize(newDim[0],newDim[1],newDim[2]);
+
+        // clean resize through thresholding of a linearly interpolated image
+        CImg<float> roif(roi);
+        roif.resize(newDim[0],newDim[1],newDim[2],-100,3);
+        roi.resize(newDim[0],newDim[1],newDim[2],-100,1);
+        cimg_foroff(roif,off) if(roif[off]>0.5) roi[off]=true; else roi[off]=false;
+
+        CImg<unsigned char> newlabel(newDim[0],newDim[1],newDim[2]); newlabel.fill(0);
+        for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
+        {
+            bool empty=true;
+            CImg<float> labelf(label.width(),label.height(),label.depth(),label.spectrum(),0.0);
+            cimg_forXYZ(label,x,y,z) if(label(x,y,z)==(unsigned char)i) { labelf(x,y,z)=1.0; empty=false; }
+            if(!empty)
+            {
+                labelf.resize(newDim[0],newDim[1],newDim[2],-100,3);
+                cimg_foroff(labelf,off) if(labelf[off]>0.5) newlabel[off]=(unsigned char)i;
+            }
+        }
+        label=newlabel;
+        label_backup=newlabel;
 
         intensityRange[0]=img.min(); intensityRange[1]=img.max();
         real t[3],newt[3];
@@ -368,15 +391,16 @@ public:
             slice[i]=floor((real)slice[i]*(real)newDim[i]/(real)dim[i]);
             coord[i]=floor((real)coord[i]*(real)newDim[i]/(real)dim[i]);
             seed[i]=floor((real)seed[i]*(real)newDim[i]/(real)dim[i]);
-            viewBB[0][i]=floor((real)viewBB[0][i]*(real)newDim[i]/(real)dim[i]);
-            viewBB[1][i]=floor((real)viewBB[1][i]*(real)newDim[i]/(real)dim[i]);
+            //            viewBB[0][i]=floor((real)viewBB[0][i]*(real)newDim[i]/(real)dim[i]);
+            //            viewBB[1][i]=floor((real)viewBB[1][i]*(real)newDim[i]/(real)dim[i]);
             dimBB[i]=viewBB[1][i]-viewBB[0][i]+1;
-            t[i]=((real)newDim[i]-(real)dim[i])/(2.*(real)newDim[i]);
+            t[i]=(real)0.5*(1.-(real)newDim[i]/(real)dim[i]);
         }
         imageCoordToPos(newt,t);
         for(unsigned int i=0;i<3;i++) translation[i]=newt[i];
 
         dim[0]=img.width(); dim[1]=img.height(); dim[2]=img.depth();
+        resetViewBB();
 
         return true;
     }
@@ -609,24 +633,24 @@ public:
             roi.fill(false);
             if(img(seed[0],seed[1],seed[2])<=range[1] && img(seed[0],seed[1],seed[2])>=range[0])
                 if(!labelLock[label(seed[0],seed[1],seed[2])])
-            {
-                // todo: openmp ?
-                if(inLabel)
                 {
-                    T lab=(int)label(seed[0],seed[1],seed[2]);
-                    cimg_forXYZ(img,x,y,z) if(label(x,y,z)==lab) if(img(x,y,z)<=range[1] && img(x,y,z)>=range[0]) roi(x,y,z)=true;
+                    // todo: openmp ?
+                    if(inLabel)
+                    {
+                        T lab=(int)label(seed[0],seed[1],seed[2]);
+                        cimg_forXYZ(img,x,y,z) if(label(x,y,z)==lab) if(img(x,y,z)<=range[1] && img(x,y,z)>=range[0]) roi(x,y,z)=true;
+                    }
+                    else
+                    {
+                        cimg_forXYZ(img,x,y,z) if(img(x,y,z)<=range[1] && img(x,y,z)>=range[0]) roi(x,y,z)=true;
+                    }
+                    if(connected)
+                    {
+                        bool tru=true;
+                        (+roi).draw_fill(seed[0],seed[1],seed[2],&tru,1.0f,roi,0);
+                    }
+                    unselectLockedLabels();
                 }
-                else
-                {
-                    cimg_forXYZ(img,x,y,z) if(img(x,y,z)<=range[1] && img(x,y,z)>=range[0]) roi(x,y,z)=true;
-                }
-                if(connected)
-                {
-                    bool tru=true;
-                    (+roi).draw_fill(seed[0],seed[1],seed[2],&tru,1.0f,roi,0);
-                }
-                unselectLockedLabels();
-            }
         }
     }
 

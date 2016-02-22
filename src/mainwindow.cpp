@@ -344,7 +344,7 @@ void MainWindow::saveAsSegmentation()
 
     QString fileName = QFileDialog::getSaveFileName(this,
                                                     tr("Save Segmentation"), path,
-                                                    tr("Images (*.mhd *.hdr)"));
+                                                    tr("Images (*.mhd *.raw *.hdr)"));
     if (fileName.isEmpty()) return;
 
     if(img.saveLabel(fileName.toStdString().c_str()))
