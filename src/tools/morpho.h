@@ -104,14 +104,14 @@ public slots:
 
     void Open()
     {
-        Dilate();
         Erode();
+        Dilate();
     }
 
     void Close()
     {
-        Erode();
         Dilate();
+        Erode();
     }
 
     void Dilate()
