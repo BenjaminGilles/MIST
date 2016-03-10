@@ -45,7 +45,7 @@ void GraphView::keyPressEvent(QKeyEvent *event)
 
     QGraphicsView::keyPressEvent(event);
 
-    if(!event->modifiers())
+    if(!event->modifiers() || event->modifiers().testFlag(Qt::KeypadModifier))
         switch (event->key())
         {
         case Qt::Key_Up:    { int dp[2]={0,-1}; img->moveViewBB(dp,area); emit selectionDone(); } break;
