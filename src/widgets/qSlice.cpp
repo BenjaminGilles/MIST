@@ -31,10 +31,10 @@ QSlice::QSlice(QWidget *parent)
 
     QObject::connect(_splitter, SIGNAL(splitterMoved(int, int)),this, SLOT(updateValues(int, int))	);
 
-    _valueMin = -1000.;
-    _valueMax = 1000.;
-    _currentMin = -1000;
-    _currentMax = 1000;
+    _valueMin = std::numeric_limits<int>::min();
+    _valueMax = std::numeric_limits<int>::max();
+    _currentMin = _valueMin;
+    _currentMax = _valueMax;
 }
 
 QSlice::~QSlice()
