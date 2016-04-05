@@ -19,7 +19,7 @@
 #include <widgets/mprlayout.h>
 #include <image.h>
 
-typedef int T;
+typedef short T;
 
 class MPRImageView;
 class ImageView;
