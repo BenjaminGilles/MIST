@@ -2,6 +2,7 @@
 
 #include <QGridLayout>
 #include <QDebug>
+#include <limits>
 
 QSlice::QSlice(QWidget *parent)
     : QWidget(parent)
