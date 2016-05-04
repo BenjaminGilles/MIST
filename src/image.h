@@ -205,9 +205,9 @@ public:
         std::string file(filename);
 
         if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos)
-//                || file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)
+            //                || file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)
         {
- //           if(file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"mhd");
+            //           if(file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"mhd");
             real voxelSize2[3],translation2[3],rotation2[3][3];
             label=load_metaimage<unsigned char,real>(file.c_str(),voxelSize2,translation2,&(rotation2[0][0]))(0);
             if(label.width()!=(int)dim[0] || label.height()!=(int)dim[1] || label.depth()!=(int)dim[2])
@@ -830,6 +830,14 @@ public:
     void erode(const unsigned int size)
     {
         roi.erode(size);
+        unselectLockedLabels();
+    }
+
+    void smooth(const float sigma)
+    {
+        CImg<real> rroi (roi);
+        rroi.blur(sigma);
+        cimg_foroff(rroi,off) if( rroi[off]<=0.5 ) roi[off]=0; else roi[off]=1;
         unselectLockedLabels();
     }
 

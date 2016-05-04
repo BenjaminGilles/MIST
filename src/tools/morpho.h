@@ -81,11 +81,20 @@ public:
         ToolBar4->addAction(InvertBut);
         ToolBar4->addSeparator();
 
+        QAction* SmoothBut = new QAction(tr("Smooth"), parent);
+        SmoothBut->setStatusTip(tr("Smooth selection"));
+        connect(SmoothBut, SIGNAL(triggered()),this, SLOT(Smooth()));
+
+        QToolBar* ToolBar5=new QToolBar(parent);
+        ToolBar5->addAction(SmoothBut);
+        ToolBar5->addSeparator();
+
         QVBoxLayout *layout = new QVBoxLayout();
         layout->addWidget(ToolBar1);
         layout->addWidget(ToolBar2);
         layout->addWidget(ToolBar3);
         layout->addWidget(ToolBar4);
+        layout->addWidget(ToolBar5);
         layout->addStretch();
 
         QWidget *w = new QWidget(parent);
@@ -139,6 +148,13 @@ public slots:
         else img->InvertROI();
         mprview->Render(true);
     }
+
+    void Smooth()
+    {
+        img->smooth(morphoSizespin->value());
+        mprview->Render(true);
+    }
+
 
 private:
 
