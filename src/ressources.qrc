@@ -39,5 +39,6 @@
         <file alias="download">icons/Data-Download-icon.png</file>
         <file alias="upload">icons/Data-Upload-icon.png</file>
         <file alias="clear">icons/Close-icon.png</file>
+        <file alias="segm3Dicon">icons/Segmentation3D.png</file>
     </qresource>
 </RCC>

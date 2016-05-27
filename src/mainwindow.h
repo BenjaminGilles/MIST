@@ -13,6 +13,7 @@
 #include <tools/marchingCubes.h>
 #include <tools/regionGrowing.h>
 #include <tools/landmarks.h>
+#include <tools/segmentation3D.h>
 
 #ifdef USEGL
 #include <widgets/glWidget.h>
@@ -52,6 +53,8 @@ private:
     regionGrowingTool* regionGrowing;
     marchingCubesTool* marchingCubes;
     landmarksTool* landmarks;
+    // Patotskaya
+    Segment3DTool* Segmentation3D;
 
 #ifdef USEGL
     GLWidget* glwidget;
