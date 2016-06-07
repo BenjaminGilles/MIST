@@ -1,0 +1,44 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="add">icons/Add-icon.png</file>
+        <file>icons/Check-icon.png</file>
+        <file alias="crop">icons/Crop-2-icon.png</file>
+        <file alias="select">icons/Cursor-Select-icon.png</file>
+        <file>icons/Data-Save-icon.png</file>
+        <file alias="openimg">icons/File-Pictures-icon.png</file>
+        <file alias="opensegm">icons/File-Pie-icon.png</file>
+        <file alias="resetZoom">icons/Full-Screen-2-icon.png</file>
+        <file alias="resample">icons/Full-View-icon.png</file>
+        <file alias="undo">icons/Left-2-2-icon.png</file>
+        <file alias="regionGrow">icons/Magic-Wand-icon.png</file>
+        <file>icons/Magnifi-Glass-2-2-icon.png</file>
+        <file>icons/Magnifi-Glass-2-icon.png</file>
+        <file>icons/Magnifi-Glass-icon.png</file>
+        <file>icons/Maximize-icon.png</file>
+        <file>icons/Memory-Card-icon.png</file>
+        <file>icons/Minimize-icon.png</file>
+        <file alias="image">icons/Photo-icon.png</file>
+        <file>icons/Picasa-icon.png</file>
+        <file alias="remove">icons/Remove-icon.png</file>
+        <file alias="resize">icons/Resize-icon.png</file>
+        <file alias="save">icons/Save-icon.png</file>
+        <file alias="help">icons/Very-Basic-Help-icon.png</file>
+        <file alias="quit">icons/Power-2-icon.png</file>
+        <file>icons/Scissor-icon.png</file>
+        <file>icons/Transform-3-icon.png</file>
+        <file alias="plain">icons/Contrast-icon.png</file>
+        <file>icons/Ying-Yang-icon.png</file>
+        <file alias="lock">icons/Lock-2-icon.png</file>
+        <file alias="brush">icons/Editing-Brush-icon.png</file>
+        <file>icons/Cube-Molecule-icon.png</file>
+        <file alias="mesh">icons/Cube-Molecule-2-icon.png</file>
+        <file alias="morpho">icons/Bacteria-icon.png</file>
+        <file alias="landmark">icons/Hand-Touch-2-icon.png</file>
+        <file>icons/Finger-DragFourSides-icon.png</file>
+        <file>icons/Cursor-Move-icon.png</file>
+        <file alias="download">icons/Data-Download-icon.png</file>
+        <file alias="upload">icons/Data-Upload-icon.png</file>
+        <file alias="clear">icons/Close-icon.png</file>
+        <file alias="segm3Dicon">icons/Segmentation3D.png</file>
+    </qresource>
+</RCC>
