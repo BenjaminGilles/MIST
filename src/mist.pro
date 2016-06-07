@@ -2,7 +2,7 @@
 QT       += core gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = qtSegmentation
+TARGET = MIST
 TEMPLATE = app
 
 CIMG_PATH = extlibs/CImg
