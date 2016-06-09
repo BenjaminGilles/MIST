@@ -28,12 +28,12 @@ public:
         toolbar ->addWidget(sizespin);
         toolbar ->addSeparator();
 
-        //>>>
-        QLabel *PosLabel = new QLabel(tr("Layer number "
-                 "%1 :").arg(0));
-        toolbar ->addWidget(PosLabel);
-        toolbar ->addSeparator();
-        //<<<
+        //>>> Patotskaya
+//        QLabel *PosLabel = new QLabel(tr("Layer number "
+//                 "%1 :").arg(0));
+//        toolbar ->addWidget(PosLabel);
+//        toolbar ->addSeparator();
+        //<<< Patotskaya
 
         QVBoxLayout *layout = new QVBoxLayout();
         layout->addWidget(toolbar);
