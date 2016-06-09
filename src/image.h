@@ -676,9 +676,9 @@ public:
 
         //int weight_map[size_x][size_y][size_z];
 
-        vector< vector<vector<int>> > weight_map(size_x);
+        vector< vector<vector<int> > > weight_map(size_x);
         for(int i=0; i < size_x; ++i) {
-          weight_map[i] = vector<vector<int>>(size_y);
+          weight_map[i] = vector<vector<int> >(size_y);
           for(int j=0; i < size_y; ++i) {
             weight_map[i][j] = vector<int>(size_z);
           }
