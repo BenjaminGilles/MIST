@@ -6,10 +6,6 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-using namespace std;
-
-#include <iomanip>
-#include <locale>
 
 #include "cimgTools.h"
 #include <QFileInfo>
@@ -598,11 +594,7 @@ public:
             P[dir[1]]=Y;
             if(!labelLock[label(P[0],P[1],P[2])]) roi(P[0],P[1],P[2])=add;
         }
-        // >>> Patotskaya
-        qDebug()<<"ROI :"<<roi(0,0,0)<<","<<roi(100,100,100)<<","<<roi(50,50,50)<<";";
-        qDebug()<<"ROI x,y :"<<roi(0,0)<<","<<roi(100,100)<<","<<roi(50,50)<<";";
-        qDebug()<<"P 0, 1, 2 :"<<P[0]<<","<<P[1]<<","<<P[2]<<" label(P[0],P[1],P[2]) = "<< roi(50,50) << ";"<<label(P[0],P[1],P[2])<<";";
-        // <<< Patotskaya
+
     }
 
     // >>> Patotskaya
@@ -668,19 +660,19 @@ public:
         int size_x =dim[dir[0]], size_y =dim[dir[1]], size_z = 10 ;
 
         //bool binary_map[size_x][size_y];
-        vector< vector<bool> > binary_map(size_x);
+        std::vector< std::vector<bool> > binary_map(size_x);
         for(int i=0; i < size_x; ++i) {
-          binary_map[i] = vector<bool>(size_y);
+          binary_map[i] = std::vector<bool>(size_y);
         }
 
 
         //int weight_map[size_x][size_y][size_z];
 
-        vector< vector<vector<int> > > weight_map(size_x);
+        std::vector< std::vector<std::vector<int> > > weight_map(size_x);
         for(int i=0; i < size_x; ++i) {
-          weight_map[i] = vector<vector<int> >(size_y);
+          weight_map[i] = std::vector<std::vector<int> >(size_y);
           for(int j=0; i < size_y; ++i) {
-            weight_map[i][j] = vector<int>(size_z);
+            weight_map[i][j] = std::vector<int>(size_z);
           }
         }
         // reset back to start slice
@@ -856,7 +848,7 @@ public:
                     min_dist = weight_map[i][j][l];
                     dist_cur = weight_map[i][j][l];
 
-                    cout<<"befor mindi  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
+                    std::cout<<"befor mindi  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
                     for (int h = 0; h<3; h++){
                         for (int v = 0; v<2; v++){
                             if ((i+h-1 >=0)&&((j+h-1 >=0))){
@@ -877,8 +869,8 @@ public:
                             }
                         }
                     }
-                    cout<<endl;
-                    cout<<"after min di  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
+                    std::cout<<std::endl;
+                    std::cout<<"after min di  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
 
                     weight_map[i][j][l] = min_dist;
 
@@ -889,16 +881,16 @@ public:
 
 
         // Output to file and console
-        ofstream fileOut, fileOut01;
+        std::ofstream fileOut, fileOut01;
         fileOut.open("map_bin.ppm");
-        fileOut << "P3" << endl;
-        fileOut << size_x << " " << size_y << endl;
-        fileOut << 255 << endl;
+        fileOut << "P3" << std::endl;
+        fileOut << size_x << " " << size_y << std::endl;
+        fileOut << 255 << std::endl;
 
         fileOut01.open("map_weight.ppm");
-        fileOut01 << "P3" << endl;
-        fileOut01 << size_x << " " << size_y << endl;
-        fileOut01 << 255 << endl;
+        fileOut01 << "P3" << std::endl;
+        fileOut01 << size_x << " " << size_y << std::endl;
+        fileOut01 << 255 << std::endl;
 
         //if (fileOut.isopen())
         for (int i = 0;i<size_x;i++){
@@ -910,13 +902,13 @@ public:
                     g = 255 - weight_map[i][j][l];r = 0;
                     //std::cout <<" Green: "<< weight_map[i][j]<< "  ";
                 }
-                fileOut01 << r<< " "<< g << " "<< b << endl;
+                fileOut01 << r<< " "<< g << " "<< b << std::endl;
                 if (binary_map[i][j]>0){
                     r = 255;b = 0;
                 }else{
                     b = 255;r = 0;
                 }
-                fileOut << r<< " "<< g << " "<< b << endl;
+                fileOut << r<< " "<< g << " "<< b << std::endl;
             }
             //std::cout << std::endl;
         }
@@ -924,10 +916,8 @@ public:
         fileOut.close();
         fileOut01.close();
 
-        // >>> Patotskaya
         //qDebug()<<"ROI x,y :"<<roi(0,0)<<","<<roi(100,100)<<","<<roi(50,50)<<";";
         //qDebug()<<"dim:"<<dim[0]<<","<<dim[1]<<","<<dim[2];
-        // <<< Patotskaya
     }
     // <<< Patotskaya
     

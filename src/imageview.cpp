@@ -22,10 +22,6 @@ GraphView::GraphView(QWidget * parent ,image<T>* v,const unsigned int a)
     this->setMouseTracking(true);
     this->setFocusPolicy(Qt::NoFocus);
 
-    // >>> Patotskaya
-    qDebug()<<"On Scroll:"<<v->slice[0]<<",";
-    // <<< Patotskaya
-
     QGraphicsScene* scene = new QGraphicsScene(this);
     this->setScene(scene);
 
@@ -70,17 +66,6 @@ void GraphView::keyPressEvent(QKeyEvent *event)
 
     //    case Qt::Key_Minus:    this->scale(1./1.2,1./1.2);       break;
     //    case Qt::Key_Equal:    fitinview ();         break;
-    // >>> Patotskaya
-    qDebug()<<"On Scroll:"<<img->slice[0]<<","<<img->slice[1]<<","<<img->slice[2]<<";";
-    int *lslice = new int [3];
-    lslice = img->slice;
-    lslice[0]-=10;
-    lslice[1]-=10;
-    lslice[2]-=10;
-    img->setSlice(lslice);
-
-    qDebug()<<"After set:"<<img->slice[0]<<","<<img->slice[1]<<","<<img->slice[2]<<";";
-    // <<< Patotskaya
 }
 
 

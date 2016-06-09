@@ -15,7 +15,7 @@ class segmentation3DTool:public baseTool
     Q_OBJECT
 
 public:
-    segmentation3DTool(MPRImageView* v,image<T>* i):baseTool(v,i),rangew(NULL)
+    segmentation3DTool(MPRImageView* v,image<T>* i):baseTool(v,i)//,rangew(NULL)
     {}
     ~segmentation3DTool()
     {}
@@ -52,9 +52,9 @@ public slots:
 
 
 private:
-    QRangeWidget *rangew ;
+//    QRangeWidget *rangew ;
 
-    T range[2];
+//    T range[2];
 
 
 };
