@@ -26,7 +26,7 @@ MainWindow::~MainWindow()
     delete regionGrowing;
     delete marchingCubes;
     delete landmarks;
-    delete Segmentation3D; //Patotskaya
+    delete segmentation3D; //Patotskaya
 #ifdef USEGL
     delete glwidget;
 # endif
@@ -192,7 +192,7 @@ QWidget *MainWindow::createTools()
     regionGrowing = new regionGrowingTool(mprview,&img);
     landmarks = new landmarksTool(mprview,&img);
     marchingCubes = new marchingCubesTool(mprview,&img);
-    Segmentation3D = new Segment3DTool(mprview,&img); //Patotskaya
+    segmentation3D = new segmentation3DTool(mprview,&img); //Patotskaya
 
     QTabWidget* tab = new QTabWidget(this);
     tab->setIconSize(QSize(30,30));
@@ -223,7 +223,7 @@ QWidget *MainWindow::createTools()
 
     // >>> Patotskaya
     // Add tool
-    tab->addTab(Segmentation3D->getMenu(this),tr(""));
+    tab->addTab(segmentation3D->getMenu(this),tr(""));
     tab->setTabIcon(6,QIcon(":segm3Dicon"));
     tab->setTabToolTip(6,tr("Segmentation 3D tool"));
     // <<< Patotskaya

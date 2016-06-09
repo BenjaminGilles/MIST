@@ -666,9 +666,23 @@ public:
 
         // Map roi on distance weights map
         int size_x =dim[dir[0]], size_y =dim[dir[1]], size_z = 10 ;
-        bool binary_map[size_x][size_y];
-        int weight_map[size_x][size_y][size_z];
 
+        //bool binary_map[size_x][size_y];
+        vector< vector<bool> > binary_map(size_x);
+        for(int i=0; i < size_x; ++i) {
+          binary_map[i] = vector<bool>(size_y);
+        }
+
+
+        //int weight_map[size_x][size_y][size_z];
+
+        vector< vector<vector<int>> > weight_map(size_x);
+        for(int i=0; i < size_x; ++i) {
+          weight_map[i] = vector<vector<int>>(size_y);
+          for(int j=0; i < size_y; ++i) {
+            weight_map[i][j] = vector<int>(size_z);
+          }
+        }
         // reset back to start slice
         P[dir_fixed] = start_slice;
 
@@ -706,13 +720,13 @@ public:
         for (int i = 1;i<size_x-1;i++){
             for (int j = 1;j<size_y-1;j++){
                 if (binary_map[i][j]){      //selected roi
-                    if ( (!binary_map[i][j+1] ) or (!binary_map[i][j-1]) or (!binary_map[i+1][j]) or (!binary_map[i-1][j]) ){
+                    if ( (!binary_map[i][j+1] ) ||(!binary_map[i][j-1]) || (!binary_map[i+1][j]) || (!binary_map[i-1][j]) ){
                         weight_map[i][j][l] = 5;
                     }else{
                         weight_map[i][j][l] = 99;
                     }
                 }else{                      //non selected
-                    if ( (binary_map[i][j+1] == true) or binary_map[i][j-1] or binary_map[i+1][j] or binary_map[i-1][j] ){
+                    if ( (binary_map[i][j+1] == true) || binary_map[i][j-1] || binary_map[i+1][j] || binary_map[i-1][j] ){
                         weight_map[i][j][l] = -5;
                     }else{
                         weight_map[i][j][l] = -99;
@@ -723,7 +737,7 @@ public:
 
         int k = 0;
         for (int i = 1;i<size_x-1;i++){
-            if ( !binary_map[i+1][k] or !binary_map[i-1][k] ){
+            if ( !binary_map[i+1][k] || !binary_map[i-1][k] ){
                 if (binary_map[i][k]){
                     weight_map[i][k][l] = 5;
                 } else {
@@ -740,7 +754,7 @@ public:
 
         k = size_y-1;
         for (int i = 1;i<size_x-1;i++){
-            if ( !binary_map[i+1][k] or !binary_map[i-1][k] ){
+            if ( !binary_map[i+1][k] || !binary_map[i-1][k] ){
                 if (binary_map[i][k]){
                     weight_map[i][k][l] = 5;
                 } else {
@@ -757,7 +771,7 @@ public:
 
         k = 0;
         for (int i = 1;i<size_y-1;i++){
-            if ( !binary_map[i+1][k] or !binary_map[i-1][k] ){
+            if ( !binary_map[i+1][k] || !binary_map[i-1][k] ){
                 if (binary_map[k][i]){
                     weight_map[k][i][l] = 5;
                 } else {
@@ -793,7 +807,7 @@ public:
         for (int i = 0;i<size_x;i++){
             for (int j = 0;j<size_y;j++){
 
-                if ((weight_map[i][j][l]!=5) and (weight_map[i][j][l]!= -5) ){
+                if ((weight_map[i][j][l]!=5) && (weight_map[i][j][l]!= -5) ){
 
                     int min_dist;
                     int dist_cur;
@@ -803,7 +817,7 @@ public:
 
                     for (int h = 0; h<3; h++){
                         for (int v = 0; v<2; v++){
-                            if ((i+h-1 > -1)and((j+h-1 > -1))){
+                            if ((i+h-1 > -1)&&((j+h-1 > -1))){
                                 if (mask_left[h][v] !=0){
 
                                     if ( weight_map[i][j][l] > 0 ){  //Positive - add
@@ -834,7 +848,7 @@ public:
         for (int i = size_x-1; i>= 0; i--){
             for (int j = size_y-1;j>= 0; j--){
 
-                if ((weight_map[i][j][l]!=5) and (weight_map[i][j][l]!= -5) ){
+                if ((weight_map[i][j][l]!=5) && (weight_map[i][j][l]!= -5) ){
 
                     int min_dist;
                     int dist_cur;
@@ -845,10 +859,10 @@ public:
                     cout<<"befor mindi  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
                     for (int h = 0; h<3; h++){
                         for (int v = 0; v<2; v++){
-                            if ((i+h-1 >=0)and((j+h-1 >=0))){
+                            if ((i+h-1 >=0)&&((j+h-1 >=0))){
                                 if (mask_right[h][v] !=0){
 
-                                    if ( weight_map[i][j] > 0 ){  //Positive - add
+                                    if ( weight_map[i][j][l] > 0 ){  //Positive - add
                                         dist_cur = weight_map[i+h-1][j+v-1][l] + mask_right[h][v];
                                         if ( min_dist > dist_cur){
                                             min_dist = dist_cur;

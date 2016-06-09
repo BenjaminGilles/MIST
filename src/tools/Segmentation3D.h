@@ -1,20 +1,23 @@
-//#ifndef BRUSH_H
-//#define BRUSH_H
+#ifndef SEGMENTATION3D_H
+#define SEGMENTATION3D_H
+
 
 #include <tools/baseTool.h>
+#include <QAction>
+#include <QToolBar>
+#include <QVBoxLayout>
 #include <widgets/qSlice.h>
 #include <QLabel>
 #include <QSpinBox>
-#include <QToolBar>
 
-class Segment3DTool:public baseTool
+class segmentation3DTool:public baseTool
 {
     Q_OBJECT
 
 public:
-    Segment3DTool(MPRImageView* v,image<T>* i):baseTool(v,i),rangew(NULL)
+    segmentation3DTool(MPRImageView* v,image<T>* i):baseTool(v,i),rangew(NULL)
     {}
-    ~Segment3DTool()
+    ~segmentation3DTool()
     {}
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
@@ -56,4 +59,4 @@ private:
 
 };
 
-//#endif
+#endif
