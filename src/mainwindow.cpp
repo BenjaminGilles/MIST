@@ -155,7 +155,7 @@ void MainWindow::setup(const QString filename)
     addDockWidget(Qt::LeftDockWidgetArea, dockWidget);
     viewMenu->addAction(dockWidget->toggleViewAction());
 
-    setWindowTitle("QtSegmentation");
+    setWindowTitle("MIST");
 
     statusBar()->showMessage(tr("Ready"),2000);
 
@@ -398,5 +398,5 @@ void MainWindow::changeStatus(const QString m)
 
 void MainWindow::about()
 {
-    QMessageBox::information(this, tr("About QtSegmentation"),  tr("v1.0\nBenjamin GILLES"));
+    QMessageBox::information(this, tr("About MIST"),  tr("v1.1\nBenjamin GILLES"));
 }
