@@ -53,7 +53,7 @@ private:
     regionGrowingTool* regionGrowing;
     marchingCubesTool* marchingCubes;
     landmarksTool* landmarks;
-    segmentation3DTool* segmentation3D;  // Patotskaya
+    Segment3DTool* Segmentation3D; // Patotskaya
 
 #ifdef USEGL
     GLWidget* glwidget;

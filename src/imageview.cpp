@@ -64,8 +64,69 @@ void GraphView::keyPressEvent(QKeyEvent *event)
             emit sliceChanged(img->slice[area]);
         }
 
-    //    case Qt::Key_Minus:    this->scale(1./1.2,1./1.2);       break;
-    //    case Qt::Key_Equal:    fitinview ();         break;
+    // Control keys can be used for tests generating
+    /*
+    if(event->key()==Qt::Key_S && mode==Segmentation3D )
+        if(!img) {
+            return;
+        }else{
+            img->first_slice = img->slice[area];
+            qDebug()<<"S click"<< img->slice[area];
+        }
+
+    if(event->key()==Qt::Key_E && mode==Segmentation3D )
+        if(!img) {
+            return;
+        }else{
+            img->last_slice =  img->slice[area];
+            qDebug()<<"E click"<<  img->slice[area];
+        }
+
+    if(event->key()==Qt::Key_K && mode==Segmentation3D )
+        img->compareRoi();
+
+    if(event->key()==Qt::Key_T && mode==Segmentation3D )
+        img->drawCilinder(area, true);
+
+    if(event->key()==Qt::Key_G && mode==Segmentation3D )
+        img->generateTest(area, true);
+
+    if(event->key()==Qt::Key_B && mode==Segmentation3D )
+        img->clearSegment(area, true);
+
+    if(event->key()==Qt::Key_P && mode==Segmentation3D ){
+        img->clearSegmentForSpline(area, true);
+        img->generateTestSpline(area, true);
+    }
+
+    if(event->key()==Qt::Key_1 && mode==Segmentation3D )
+        if(!img) {
+            return;
+        }else{
+            img->interp_points++;
+            img->interp_nums.push_back(img->slice[area]);
+            img->last_slice = img->slice[area];
+        }
+
+    if(event->key()==Qt::Key_I && mode==Segmentation3D ){
+
+        img->first_slice = img->interp_nums[0];
+        qDebug() << img->interp_nums[0];
+        img->splineInterpolation(area, true);
+    }
+    // Copy roi
+    if(event->key()==Qt::Key_2 && mode==Segmentation3D ){
+
+        img->copyRoi(area, true);
+    }
+    // Compare roi
+    if(event->key()==Qt::Key_3 && mode==Segmentation3D ){
+
+        img->compareRoi(area, true);
+    }*/
+
+    Render(true);
+
 }
 
 
@@ -158,6 +219,7 @@ void GraphView::wheelEvent(QWheelEvent *event)
     // todo change brush size with Qt::ControlModifier
 }
 
+
 void GraphView::mousePressEvent(QMouseEvent *mouseEvent)
 {
     QGraphicsView::mousePressEvent(mouseEvent);
@@ -177,8 +239,8 @@ void GraphView::mousePressEvent(QMouseEvent *mouseEvent)
     //Segmentation3D
     if(mode==Segmentation3D && pressed==Qt::LeftButton)
     {
-        img->selectBrushMulLayers(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
-        //img->selectBrush(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
+        img->interpolateLayers(area);
+        //img->selectBrushMulLayers(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
         Render(true);
     }
     else if(mode==RegionGrowing && pressed==Qt::LeftButton)

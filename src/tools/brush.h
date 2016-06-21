@@ -29,10 +29,10 @@ public:
         toolbar ->addSeparator();
 
         //>>>
-        QLabel *PosLabel = new QLabel(tr("Layer number "
+        /*QLabel *PosLabel = new QLabel(tr("Layer number "
                  "%1 :").arg(0));
         toolbar ->addWidget(PosLabel);
-        toolbar ->addSeparator();
+        toolbar ->addSeparator();*/
         //<<<
 
         QVBoxLayout *layout = new QVBoxLayout();

@@ -6,9 +6,17 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+using namespace std;
+
+#include <iomanip>
+#include <locale>
 
 #include "cimgTools.h"
 #include <QFileInfo>
+
+#include <cstdio>
+#include <cstdlib>
+#include "spline.h"
 
 typedef float real;
 static const real EPSILON=1E-10;
@@ -106,6 +114,25 @@ public:
     int selectedLandmark;
     std::string landmarksFileName;
 
+    //>>> Patotskaya
+    int first_slice;
+    int last_slice;
+    CImg<bool> roi_backup; // here stored the roi of previous step of interpolation
+    CImg<bool> roi_compare; // true segmentation roi
+    CImg<bool> t_roi;
+    CImg<bool> t_for_spline_roi;
+    CImg<bool> c_roi;
+    CImg<bool> saved_roi; //for comparison
+    vector<int> loc_err;
+    vector<float> loc_err_rel;
+    vector<float> loc_err_abs;
+
+    bool interpolation_type = false; // linear interpolation by default
+
+    int interp_points = 0; // total amount of basis interpolation slices
+    vector<int> interp_nums;  // numbers interpolation slices
+    //<<< Patotskaya
+
     image()
     {
         for(unsigned int i=0;i<3;++i)   for(unsigned int j=0;j<3;++j) rotation[i][j]=0;
@@ -121,6 +148,7 @@ public:
         brushSize=10;
         intensityRange[0]=intensityRange[1]=0;
         selectedLandmark=-1;
+
     }
     
     ~image()
@@ -594,17 +622,14 @@ public:
             P[dir[1]]=Y;
             if(!labelLock[label(P[0],P[1],P[2])]) roi(P[0],P[1],P[2])=add;
         }
-
     }
 
     // >>> Patotskaya
-    void selectBrushMulLayers(const unsigned int area,const bool add)
-    {
-        int dir[2];
-        unsigned int P[3];
-        int x,y,z,i;
-        int dir_fixed; //direction axes fixed
-        bool tru=true;
+    void setWeightsVect_99( int size_x, int size_y, int size_z,
+                            vector< vector<bool> > & binary_map,
+                            vector< vector< vector<int> > > & weight_map,
+                            int slice_fixed, int num_slice){
+
         int mask_left[3][3] = {{14,10,14},
                                {10,0,0},
                                {0,0,0}};
@@ -613,193 +638,109 @@ public:
                                 {0,0,10},
                                 {14,10,14}};
 
-        // Initialisation
-        // Detect which 2D image is to be processed
-        getPlaneDirections(dir,area);
-
-        //initiation with current cursor coordinate
-        x=coord[dir[0]],y=coord[dir[1]];
-        z=coord[area];
-        CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
-
-        tmp.draw_circle(x,y,brushSize,&tru);
-
-        P[area]=coord[area]; // Same as dir_fixed
-
-        // To know the number of fixed plane:
-        for (i=0; i<3; i++){
-            if ( (dir[0]!=i) && (dir[1]!=i) ){
-                dir_fixed = i;
-            }
-        }
-        int start_slice = P[dir_fixed];
-        qDebug()<<"FIXDIR :"<<dir_fixed<<"Dir: "<< dir[0]<<" : "<< dir[1];
-
-        //cimg_for_inZ(tmp, start_slice, start_slice+30, Z){  //not work
-        for (i=0; i<20; i++){
-            cimg_forXY(tmp,X,Y){
-                if(tmp(X,Y)){
-                    P[dir[0]]=X;
-                    P[dir[1]]=Y;
-                    if(!labelLock[label(P[0],P[1],P[2])])
-                        roi(P[0],P[1],P[2])=add;
-                }
-            }
-            P[dir_fixed]++;
-        }
-
-        qDebug()<<"SIZES :"<<dim[dir[0]]<< " 2: " <<dim[dir[1]]<<"'";
-
-        /*if  (dir[1]<dir[0]){
-            int d = dir[0];
-            dir[0] = dir[1];
-            dir[1] = d;
-        }*/
-
-        // Map roi on distance weights map
-        int size_x =dim[dir[0]], size_y =dim[dir[1]], size_z = 10 ;
-
-        //bool binary_map[size_x][size_y];
-        std::vector< std::vector<bool> > binary_map(size_x);
-        for(int i=0; i < size_x; ++i) {
-          binary_map[i] = std::vector<bool>(size_y);
-        }
-
-
-        //int weight_map[size_x][size_y][size_z];
-
-        std::vector< std::vector<std::vector<int> > > weight_map(size_x);
-        for(int i=0; i < size_x; ++i) {
-          weight_map[i] = std::vector<std::vector<int> >(size_y);
-          for(int j=0; i < size_y; ++i) {
-            weight_map[i][j] = std::vector<int>(size_z);
-          }
-        }
-        // reset back to start slice
-        P[dir_fixed] = start_slice;
-
-
-        // binary segmentation map
-        int t = 0;
-        cimg_forXY(roi,X,Y){
-            t++;
-
-            P[dir[0]]=X;
-            P[dir[1]]=Y;
-
-            qDebug()<<"P0 "<< P[0] <<" p1 = "<<P[1]<<" p2 = "<< P[2];
-
-            if(roi(P[0],P[1],P[2])){
-                binary_map[X][Y]=true;
-
-                qDebug()<<"Found! "<< t <<" X = "<<X<<" Y = "<< Y;
-            }else{
-                binary_map[X][Y]= false;
-            }
-        }
-
-        // initialize distance weights
-        for (int i = 0;i<size_x;i++){
-            for (int j = 0;j<size_y;j++){
-                for (int k = 0;k<size_z;k++){
-                        weight_map[i][j][k] = 0;
-                }
-            }
-        }
 
         // initialize distance weights on borders
-        int l = start_slice;
+        int l = slice_fixed;
         for (int i = 1;i<size_x-1;i++){
             for (int j = 1;j<size_y-1;j++){
                 if (binary_map[i][j]){      //selected roi
-                    if ( (!binary_map[i][j+1] ) ||(!binary_map[i][j-1]) || (!binary_map[i+1][j]) || (!binary_map[i-1][j]) ){
+                    if ((!binary_map[i][j+1] ) or (!binary_map[i][j-1]) or (!binary_map[i+1][j]) or (!binary_map[i-1][j]) ){
                         weight_map[i][j][l] = 5;
                     }else{
                         weight_map[i][j][l] = 99;
                     }
                 }else{                      //non selected
-                    if ( (binary_map[i][j+1] == true) || binary_map[i][j-1] || binary_map[i+1][j] || binary_map[i-1][j] ){
+                    if ( binary_map[i][j+1]  or binary_map[i][j-1] or binary_map[i+1][j] or binary_map[i-1][j] ){
                         weight_map[i][j][l] = -5;
                     }else{
                         weight_map[i][j][l] = -99;
                     }
                 }
+                //qDebug()<<"Step 2 :";
             }
         }
 
-        int k = 0;
+        weight_map[0][0][l] = -99;
+        weight_map[0][size_y-1][l] = -99;
+        weight_map[size_x-1][size_y-1][l] = -99;
+        weight_map[size_x-1][0][l] = -99;
+
+        int i = 0;
+        for (int j = 1;j<size_y-1;j++){
+            if (binary_map[i][j]){      //selected roi
+                if ((!binary_map[i][j+1] ) or (!binary_map[i][j-1]) or (!binary_map[i+1][j]) ){
+                    weight_map[i][j][l] = 5;
+                }else{
+                    weight_map[i][j][l] = 99;
+                }
+            }else{                      //non selected
+                if ( binary_map[i][j+1]  or binary_map[i][j-1] or binary_map[i+1][j]){
+                    weight_map[i][j][l] = -5;
+                }else{
+                    weight_map[i][j][l] = -99;
+                }
+            }
+
+        }
+
+        i = size_x-1;
+        for (int j = 1;j<size_y-1;j++){
+            if (binary_map[i][j]){      //selected roi
+                if ((!binary_map[i][j+1] ) or (!binary_map[i][j-1]) or (!binary_map[i-1][j]) ){
+                    weight_map[i][j][l] = 5;
+                }else{
+                    weight_map[i][j][l] = 99;
+                }
+            }else{                      //non selected
+                if ( binary_map[i][j+1]  or binary_map[i][j-1] or binary_map[i-1][j] ){
+                    weight_map[i][j][l] = -5;
+                }else{
+                    weight_map[i][j][l] = -99;
+                }
+            }
+
+        }
+
+        int j = 0;
         for (int i = 1;i<size_x-1;i++){
-            if ( !binary_map[i+1][k] || !binary_map[i-1][k] ){
-                if (binary_map[i][k]){
-                    weight_map[i][k][l] = 5;
-                } else {
-                    weight_map[i][k][l] = 99;
+            if (binary_map[i][j]){      //selected roi
+                if ((!binary_map[i][j+1] ) or (!binary_map[i+1][j]) or (!binary_map[i-1][j]) ){
+                    weight_map[i][j][l] = 5;
+                }else{
+                    weight_map[i][j][l] = 99;
                 }
-            }else{
-                if (binary_map[i][k]){
-                    weight_map[i][k][l] = -5;
-                } else {
-                    weight_map[i][k][l] = -99;
+            }else{                      //non selected
+                if ( binary_map[i][j+1]  or binary_map[i+1][j] or binary_map[i-1][j] ){
+                    weight_map[i][j][l] = -5;
+                }else{
+                    weight_map[i][j][l] = -99;
                 }
             }
         }
 
-        k = size_y-1;
+        j = size_y-1;
         for (int i = 1;i<size_x-1;i++){
-            if ( !binary_map[i+1][k] || !binary_map[i-1][k] ){
-                if (binary_map[i][k]){
-                    weight_map[i][k][l] = 5;
-                } else {
-                    weight_map[i][k][l] = -5;
+            if (binary_map[i][j]){      //selected roi
+                if ( (!binary_map[i][j-1]) or (!binary_map[i+1][j]) or (!binary_map[i-1][j]) ){
+                    weight_map[i][j][l] = 5;
+                }else{
+                    weight_map[i][j][l] = 99;
                 }
-            }else{
-                if (binary_map[i][k]){
-                    weight_map[i][k][l] = 99;
-                } else {
-                    weight_map[i][k][l] = -99;
+            }else{                      //non selected
+                if ( binary_map[i][j-1] or binary_map[i+1][j] or binary_map[i-1][j] ){
+                    weight_map[i][j][l] = -5;
+                }else{
+                    weight_map[i][j][l] = -99;
                 }
             }
-        }
 
-        k = 0;
-        for (int i = 1;i<size_y-1;i++){
-            if ( !binary_map[i+1][k] || !binary_map[i-1][k] ){
-                if (binary_map[k][i]){
-                    weight_map[k][i][l] = 5;
-                } else {
-                    weight_map[k][i][l] = -5;
-                }
-            }else{
-                if (binary_map[k][i]){
-                    weight_map[k][i][l] = 99;
-                } else {
-                    weight_map[k][i][l] = -99;
-                }
-            }
-        }
-
-        k = size_x-1;
-        for (int i = 1;i<size_y-1;i++){
-            if ( binary_map[k][i+1]||binary_map[k][i-1] ){
-                if (binary_map[k][i]){
-                    weight_map[k][i][l] = 5;
-                } else {
-                    weight_map[k][i][l] = -5;
-                }
-            }else{
-                if (binary_map[k][i]){
-                    weight_map[k][i][l] = 99;
-                } else {
-                    weight_map[k][i][l] = -99;
-                }
-            }
         }
 
         // Chamfering
         for (int i = 0;i<size_x;i++){
             for (int j = 0;j<size_y;j++){
 
-                if ((weight_map[i][j][l]!=5) && (weight_map[i][j][l]!= -5) ){
+                if ((weight_map[i][j][l]!=5) and (weight_map[i][j][l]!= -5) ){
 
                     int min_dist;
                     int dist_cur;
@@ -808,20 +749,20 @@ public:
                     dist_cur = weight_map[i][j][l];
 
                     for (int h = 0; h<3; h++){
-                        for (int v = 0; v<2; v++){
-                            if ((i+h-1 > -1)&&((j+h-1 > -1))){
+                        for (int v = 0; v<3; v++){
+                            if ((i+h-1 >=0)and(j+ v-1 >=0) and (i+h-1 < size_x) and (j+v-1 < size_y) ){
                                 if (mask_left[h][v] !=0){
 
                                     if ( weight_map[i][j][l] > 0 ){  //Positive - add
                                         dist_cur = weight_map[i+h-1][j+v-1][l] + mask_left[h][v];
                                         if ( min_dist > dist_cur){
                                             min_dist = dist_cur;
-                                         }
+                                        }
                                     }else{                        //Negative - substruct
                                         dist_cur = weight_map[i+h-1][j+v-1][l] - mask_left[h][v];
                                         if ( min_dist < dist_cur){
                                             min_dist = dist_cur;
-                                         }
+                                        }
                                     }
                                 }
                             }
@@ -829,7 +770,6 @@ public:
                     }
 
                     weight_map[i][j][l] = min_dist;
-
 
                 }
             }
@@ -840,7 +780,7 @@ public:
         for (int i = size_x-1; i>= 0; i--){
             for (int j = size_y-1;j>= 0; j--){
 
-                if ((weight_map[i][j][l]!=5) && (weight_map[i][j][l]!= -5) ){
+                if ((weight_map[i][j][l]!=5) and (weight_map[i][j][l]!= -5) ){
 
                     int min_dist;
                     int dist_cur;
@@ -848,29 +788,254 @@ public:
                     min_dist = weight_map[i][j][l];
                     dist_cur = weight_map[i][j][l];
 
-                    std::cout<<"befor mindi  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
+                    //cout<<"befor mindi  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
                     for (int h = 0; h<3; h++){
-                        for (int v = 0; v<2; v++){
-                            if ((i+h-1 >=0)&&((j+h-1 >=0))){
+                        for (int v = 0; v<3; v++){
+                            if ((i+h-1 >=0)and(j+ v-1 >=0) and (i+h-1 < size_x) and (j+v-1 < size_y) ){
                                 if (mask_right[h][v] !=0){
 
                                     if ( weight_map[i][j][l] > 0 ){  //Positive - add
                                         dist_cur = weight_map[i+h-1][j+v-1][l] + mask_right[h][v];
                                         if ( min_dist > dist_cur){
                                             min_dist = dist_cur;
-                                         }
+                                        }
                                     }else{                        //Negative - substruct
                                         dist_cur = weight_map[i+h-1][j+v-1][l] - mask_right[h][v];
                                         if ( min_dist < dist_cur){
                                             min_dist = dist_cur;
-                                         }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    std::cout<<std::endl;
-                    std::cout<<"after min di  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
+                    //cout<<endl;
+                    //cout<<"after min di  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
+
+                    weight_map[i][j][l] = min_dist;
+
+
+                }
+            }
+        }
+
+        // File output
+
+        /*        ofstream fileOut01;
+        ostringstream convert;   // stream used for the conversion
+        convert << slice_fixed;
+
+        string s = "map_weight_" + convert.str()+".ppm" ;
+        fileOut01.open(s.c_str());
+        fileOut01 << "P3" << endl;
+        fileOut01 << size_x << " " << size_y << endl;
+        fileOut01 << 255 << endl;
+
+        for (int i = 0;i<size_x;i++){
+            for (int j = 0;j<size_y;j++){
+                int r = 0, g = 0, b = 0;
+                if (weight_map[i][j][l]<0){
+                    r = 255 + weight_map[i][j][l]%255;b = 0;
+                }else{
+                    g = 255 - weight_map[i][j][l]%255;r = 0;
+
+                }
+                fileOut01 << r<< " "<< g << " "<< b << endl;
+            }
+
+        }
+
+        fileOut01.close();
+        */
+    }
+
+
+
+    void setWeightsVect_990( int size_x, int size_y, int size_z,
+                             vector< vector<bool> > & binary_map,
+                             vector< vector< vector<int> > > & weight_map,
+                             int slice_fixed, int num_slice){
+
+        int mask_left[3][3] = {{14,10,14},
+                               {10,0,0},
+                               {0,0,0}};
+
+        int mask_right[3][3] = {{0,0,0},
+                                {0,0,10},
+                                {14,10,14}};
+
+
+        // initialize distance weights on borders
+        int l = slice_fixed;
+        for (int i = 1;i<size_x-1;i++){
+            for (int j = 1;j<size_y-1;j++){
+                if (binary_map[i][j]){      //selected roi
+                    if ((!binary_map[i][j+1] ) or (!binary_map[i][j-1]) or (!binary_map[i+1][j]) or (!binary_map[i-1][j]) ){
+                        weight_map[i][j][l] = 5;
+                    }else{
+                        weight_map[i][j][l] = 990;
+                    }
+                }else{                      //non selected
+                    if ( binary_map[i][j+1]  or binary_map[i][j-1] or binary_map[i+1][j] or binary_map[i-1][j] ){
+                        weight_map[i][j][l] = -5;
+                    }else{
+                        weight_map[i][j][l] = -990;
+                    }
+                }
+            }
+        }
+
+        weight_map[0][0][l] = -990;
+        weight_map[0][size_y-1][l] = -990;
+        weight_map[size_x-1][size_y-1][l] = -990;
+        weight_map[size_x-1][0][l] = -990;
+
+        int i = 0;
+        for (int j = 1;j<size_y-1;j++){
+            if (binary_map[i][j]){      //selected roi
+                if ((!binary_map[i][j+1] ) or (!binary_map[i][j-1]) or (!binary_map[i+1][j]) ){
+                    weight_map[i][j][l] = 5;
+                }else{
+                    weight_map[i][j][l] = 990;
+                }
+            }else{                      //non selected
+                if ( binary_map[i][j+1]  or binary_map[i][j-1] or binary_map[i+1][j]){
+                    weight_map[i][j][l] = -5;
+                }else{
+                    weight_map[i][j][l] = -990;
+                }
+            }
+
+        }
+
+        i = size_x-1;
+        for (int j = 1;j<size_y-1;j++){
+            if (binary_map[i][j]){      //selected roi
+                if ((!binary_map[i][j+1] ) or (!binary_map[i][j-1]) or (!binary_map[i-1][j]) ){
+                    weight_map[i][j][l] = 5;
+                }else{
+                    weight_map[i][j][l] = 990;
+                }
+            }else{                      //non selected
+                if ( binary_map[i][j+1]  or binary_map[i][j-1] or binary_map[i-1][j] ){
+                    weight_map[i][j][l] = -5;
+                }else{
+                    weight_map[i][j][l] = -990;
+                }
+            }
+
+        }
+
+        int j = 0;
+        for (int i = 1;i<size_x-1;i++){
+            if (binary_map[i][j]){      //selected roi
+                if ((!binary_map[i][j+1] ) or (!binary_map[i+1][j]) or (!binary_map[i-1][j]) ){
+                    weight_map[i][j][l] = 5;
+                }else{
+                    weight_map[i][j][l] = 990;
+                }
+            }else{                      //non selected
+                if ( binary_map[i][j+1]  or binary_map[i+1][j] or binary_map[i-1][j] ){
+                    weight_map[i][j][l] = -5;
+                }else{
+                    weight_map[i][j][l] = -990;
+                }
+            }
+        }
+
+        j = size_y-1;
+        for (int i = 1;i<size_x-1;i++){
+            if (binary_map[i][j]){      //selected roi
+                if ( (!binary_map[i][j-1]) or (!binary_map[i+1][j]) or (!binary_map[i-1][j]) ){
+                    weight_map[i][j][l] = 5;
+                }else{
+                    weight_map[i][j][l] = 990;
+                }
+            }else{                      //non selected
+                if ( binary_map[i][j-1] or binary_map[i+1][j] or binary_map[i-1][j] ){
+                    weight_map[i][j][l] = -5;
+                }else{
+                    weight_map[i][j][l] = -990;
+                }
+            }
+
+        }
+
+        // Chamfering
+        for (int i = 0;i<size_x;i++){
+            for (int j = 0;j<size_y;j++){
+
+                if ((weight_map[i][j][l]!=5) and (weight_map[i][j][l]!= -5) ){
+
+                    int min_dist;
+                    int dist_cur;
+
+                    min_dist = weight_map[i][j][l];
+                    dist_cur = weight_map[i][j][l];
+
+                    for (int h = 0; h<3; h++){
+                        for (int v = 0; v<3; v++){
+                            if ((i+h-1 >=0)and(j+ v-1 >=0) and (i+h-1 < size_x) and (j+v-1 < size_y) ){
+                                if (mask_left[h][v] !=0){
+
+                                    if ( weight_map[i][j][l] > 0 ){  //Positive - add
+                                        dist_cur = weight_map[i+h-1][j+v-1][l] + mask_left[h][v];
+                                        if ( min_dist > dist_cur){
+                                            min_dist = dist_cur;
+                                        }
+                                    }else{                        //Negative - substruct
+                                        dist_cur = weight_map[i+h-1][j+v-1][l] - mask_left[h][v];
+                                        if ( min_dist < dist_cur){
+                                            min_dist = dist_cur;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    weight_map[i][j][l] = min_dist;
+
+                }
+            }
+        }
+
+
+        // Chamfering backwords
+        for (int i = size_x-1; i>= 0; i--){
+            for (int j = size_y-1;j>= 0; j--){
+
+                if ((weight_map[i][j][l]!=5) and (weight_map[i][j][l]!= -5) ){
+
+                    int min_dist;
+                    int dist_cur;
+
+                    min_dist = weight_map[i][j][l];
+                    dist_cur = weight_map[i][j][l];
+
+                    //cout<<"befor mindi  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
+                    for (int h = 0; h<3; h++){
+                        for (int v = 0; v<3; v++){
+                            if ((i+h-1 >=0)and(j+ v-1 >=0) and (i+h-1 < size_x) and (j+v-1 < size_y) ){
+                                if (mask_right[h][v] !=0){
+
+                                    if ( weight_map[i][j][l] > 0 ){  //Positive - add
+                                        dist_cur = weight_map[i+h-1][j+v-1][l] + mask_right[h][v];
+                                        if ( min_dist > dist_cur){
+                                            min_dist = dist_cur;
+                                        }
+                                    }else{                        //Negative - substruct
+                                        dist_cur = weight_map[i+h-1][j+v-1][l] - mask_right[h][v];
+                                        if ( min_dist < dist_cur){
+                                            min_dist = dist_cur;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //cout<<endl;
+                    //cout<<"after min di  :"<<min_dist<<" i="<<i<<"  j= "<<j <<";";
 
                     weight_map[i][j][l] = min_dist;
 
@@ -880,47 +1045,722 @@ public:
         }
 
 
-        // Output to file and console
-        std::ofstream fileOut, fileOut01;
-        fileOut.open("map_bin.ppm");
-        fileOut << "P3" << std::endl;
-        fileOut << size_x << " " << size_y << std::endl;
-        fileOut << 255 << std::endl;
 
-        fileOut01.open("map_weight.ppm");
-        fileOut01 << "P3" << std::endl;
-        fileOut01 << size_x << " " << size_y << std::endl;
-        fileOut01 << 255 << std::endl;
+    }
 
-        //if (fileOut.isopen())
-        for (int i = 0;i<size_x;i++){
-            for (int j = 0;j<size_y;j++){
-                int r = 0, g = 0, b = 0;
-                if (weight_map[i][j][l]<0){
-                    r = 255 + weight_map[i][j][l];b = 0;
-                }else{
-                    g = 255 - weight_map[i][j][l];r = 0;
-                    //std::cout <<" Green: "<< weight_map[i][j]<< "  ";
+
+    void interpolateLayers(const unsigned int area){
+
+
+        int dir[2]; getPlaneDirections(dir,area);
+        int x=coord[dir[0]],y=coord[dir[1]];
+        int P[3];
+        P[area]=coord[area];
+
+        int start_slice;
+        int num_slice;
+        int fin_slice;
+
+        // Map roi on distance weights map
+        int size_x =dim[dir[0]], size_y =dim[dir[1]], size_z = dim[area];
+        int i, j,k;
+        interp_nums.clear();
+        interp_points = 0;
+
+        for (i = 0; i< size_z; i++){
+            bool found = false;
+            j =0;
+            while ((j<size_x) and (!found)){
+                k=0;
+                while ((k< size_y) and (!found)){
+                    P[area]=i;
+                    P[dir[0]]=j;
+                    P[dir[1]]=k;
+
+                    if (roi(P[0],P[1],P[2])==true){
+                        interp_nums.push_back(i);
+                        interp_points++;
+                        found = true;
+                    }
+                    k++;
                 }
-                fileOut01 << r<< " "<< g << " "<< b << std::endl;
-                if (binary_map[i][j]>0){
-                    r = 255;b = 0;
-                }else{
-                    b = 255;r = 0;
-                }
-                fileOut << r<< " "<< g << " "<< b << std::endl;
+                j++;
             }
-            //std::cout << std::endl;
         }
 
-        fileOut.close();
-        fileOut01.close();
+        if (interp_points<2){
+            qDebug()<<"Please select more layers.";
+            return;
+        }
 
-        //qDebug()<<"ROI x,y :"<<roi(0,0)<<","<<roi(100,100)<<","<<roi(50,50)<<";";
-        //qDebug()<<"dim:"<<dim[0]<<","<<dim[1]<<","<<dim[2];
+        if ((interp_points<4)and interpolation_type){
+            qDebug()<<"Please select more layers.";
+            return;
+        }
+        if (interpolation_type){
+            splineInterpolation(area, true);
+            return;
+        }
+
+
+        for (i = 0; i< interp_points-1 ; i++){
+            first_slice = interp_nums[i];
+            last_slice = interp_nums[i+1];
+
+            if (first_slice < last_slice  +1)           {
+                selectBrushMulLayers(area,true);
+            }
+
+
+        }
+
+        //return first and last slices to the very first and the verry last ones
+        first_slice = interp_nums[0];
+        last_slice = interp_nums[interp_points-1];
+
     }
-    // <<< Patotskaya
-    
+
+
+    void selectBrushMulLayers(const unsigned int area,const bool add)
+    {
+        int z,i;
+
+        int dir[2]; getPlaneDirections(dir,area);
+        int x=coord[dir[0]],y=coord[dir[1]];
+        bool tru=true;
+        CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
+        //tmp.draw_circle(x,y,brushSize,&tru);
+        int P[3];
+        P[area]=coord[area];
+
+        int start_slice; //= P[area];
+        int num_slice; //= 30;
+        int fin_slice ;//= start_slice + num_slice;
+
+        num_slice = abs(first_slice - last_slice)-1;
+
+        if (last_slice<first_slice){
+
+            first_slice = last_slice;
+            last_slice = first_slice + num_slice;
+        }
+        if ((last_slice == first_slice ) or (last_slice == first_slice+1 )){
+            return;
+        }
+
+        start_slice = first_slice;
+        fin_slice = last_slice;
+
+        // Map roi on distance weights map
+        int size_x =dim[dir[0]], size_y =dim[dir[1]], size_z = num_slice + 2; // include border slides
+
+
+        // Using vectors for binary and weight map
+        vector< vector<bool> > binary_map(size_x, vector<bool>(size_y,0));
+
+        vector< vector< vector<int> > >
+                weight_map(size_x, vector< vector<int> > (size_y, vector<int>(size_z,0)) );
+        //<<<
+
+        // reset back to start slice
+        P[area] = start_slice;
+
+        CImg<bool> c_roi(dim[dir[0]],dim[dir[1]]); c_roi.fill(false);
+
+        cimg_forXY(c_roi,x,y)
+        {
+            P[dir[0]]=x;
+            P[dir[1]]=y;
+            c_roi(x,y)=roi(P[0],P[1],P[2]);
+            binary_map[x][y] = c_roi(x,y);
+        }
+
+        setWeightsVect_990( size_x,size_y,size_z, binary_map, weight_map,0, num_slice);
+
+        //Evaluate last slide
+        P[area] = fin_slice;
+        cimg_forXY(c_roi,x,y)
+        {
+            P[dir[0]]=x;
+            P[dir[1]]=y;
+            c_roi(x,y)=roi(P[0],P[1],P[2]);
+            binary_map[x][y] = c_roi(x,y);
+        }
+
+
+
+        setWeightsVect_990( size_x,size_y,size_z, binary_map, weight_map, size_z-1, num_slice);
+
+
+        int volume_roi = 0;
+
+        cimg_forXY(c_roi,X,Y){
+
+            P[dir[0]]=X;
+            P[dir[1]]=Y;
+
+            if ((X<size_x) and (Y<size_y) ){
+
+                float del = weight_map[X][Y][size_z-1] - weight_map[X][Y][0];
+
+                float delta_dist = del/(size_z-1);
+
+
+                P[dir[0]]=X;
+                P[dir[1]]=Y;
+
+                for(int k = 1; k < size_z-1; k++) {
+                    del = k*delta_dist;
+                    weight_map[X][Y][k] = weight_map[X][Y][0] + del;
+
+                    if (weight_map[X][Y][k]>0){
+
+                        P[area] = start_slice + k;
+                        volume_roi++;
+                        roi(P[0],P[1],P[2])=add;
+
+                    }
+                }
+            }
+        }
+
+        //to generate file with weights, use:
+        /*for (int l = 0;l<size_z;l++){
+
+            ostringstream convert;   // stream used for the conversion
+
+            convert << l;
+
+            string s = "map_weight_l" + convert.str()+".ppm" ;
+            ofstream fileOut01;
+            fileOut01.open(s.c_str());
+
+            fileOut01 << "P3" << endl;
+            fileOut01 << size_x << " " << size_y << endl;
+            fileOut01 << 255 << endl;
+
+            //if (fileOut.isopen())
+            for (int i = 0;i<size_x;i++){
+                for (int j = 0;j<size_y;j++){
+                    int r = 0, g = 0, b = 100;
+                    if (weight_map[i][j][l]<0){
+                        r = (abs( weight_map[i][j][l]))%255;
+                        g = 0;
+                        b = 50+ (abs( weight_map[i][j][l]))%20;
+                    }else{
+                        g = (abs( weight_map[i][j][l]))%255;
+                        r = 0;
+                        b = (abs( 100 - weight_map[i][j][l]))%255;
+                        //std::cout <<" Green: "<< weight_map[i][j]<< "  ";
+                    }
+                    fileOut01 << r<< " "<< g << " "<< b << endl;
+                    if (binary_map[i][j]>0){
+                        r = 255;b = 0;
+                    }else{
+                        b = 255;r = 0;
+                    }
+                    //fileOut << r<< " "<< g << " "<< b << endl;
+                }
+                //std::cout << std::endl;
+            }
+            //fileOut.close();
+            fileOut01.close();
+        }*/
+
+    }
+
+
+
+    ///////////////////////////
+    /// splineInterpolation
+    ///////////////////////////
+    void splineInterpolation (const unsigned int area,const bool add)
+    {
+        int z,i;
+
+        int dir[2]; getPlaneDirections(dir,area);
+        int x=coord[dir[0]],y=coord[dir[1]];
+        bool tru=true;
+        CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
+
+        int P[3];
+        P[area]=coord[area];
+
+
+
+        int start_slice;
+        int num_slice;
+        int fin_slice ;
+
+        num_slice = abs(first_slice - last_slice)-1;
+
+        if (last_slice<first_slice){
+
+            first_slice = last_slice;
+            last_slice = first_slice + num_slice;
+        }
+        if ((last_slice == first_slice ) or (last_slice == first_slice+1 )){
+            return;
+        }
+
+        start_slice = first_slice;
+        fin_slice = last_slice;
+
+        // Map roi on distance weights map
+        int size_x =dim[dir[0]], size_y =dim[dir[1]], size_z = num_slice + 2; // include border slides
+
+
+
+        // Using vectors
+        // >>>
+        vector< vector<bool> > binary_map(size_x, vector<bool>(size_y,0));
+
+        vector< vector< vector<int> > >
+                weight_map(size_x, vector< vector<int> > (size_y, vector<int>(size_z,0)) );
+        vector<double> x_val(dim[dir[0]]), y_val(dim[dir[1]]);
+
+        //<<<
+
+        // reset back to start slice
+        P[area] = start_slice;
+
+        x_val.resize(interp_points,0.0);
+        y_val.resize(interp_points,0.0);
+
+        CImg<bool> c_roi(dim[dir[0]],dim[dir[1]]);
+
+        for (int i = 0; i< interp_points; i++){
+
+            float f_index = 0.0;
+            f_index = interp_nums[i]+0.0;
+
+
+            x_val[i]=f_index;
+            qDebug()<< interp_nums[i] << "float index:"<<f_index<<x_val[i];
+
+            c_roi.fill(false);
+            P[area] = interp_nums[i] ;
+
+            qDebug()<< "Area = " << P[area];
+
+            cimg_forXY(c_roi,x,y)
+            {
+                P[dir[0]]=x;
+                P[dir[1]]=y;
+                c_roi(x,y)=roi(P[0],P[1],P[2]);
+                binary_map[x][y] = c_roi(x,y);
+            }
+            qDebug()<< "Nums for Weights: " <<interp_nums[i] - first_slice;
+
+            setWeightsVect_990( size_x,size_y,size_z, binary_map, weight_map,interp_nums[i] - first_slice, num_slice);
+
+            qDebug()<< "Weights: " <<weight_map[50][50][ interp_nums[i] - first_slice];
+
+
+        }
+
+
+        int volume_roi = 0;
+
+        cimg_forXY(c_roi,X,Y){
+
+            P[dir[0]]=X;
+            P[dir[1]]=Y;
+
+            tk::spline s;
+
+            for (int sl = 0; sl< interp_points; sl++){
+
+                y_val[sl] = weight_map[X][Y][ interp_nums[sl]- first_slice];
+
+
+            }
+
+            s.set_points(x_val,y_val);
+
+            if ((X<size_x) and (Y<size_y) ){
+                P[dir[0]]=X;
+                P[dir[1]]=Y;
+
+                for(int k = 1; k < size_z-1; k++) {
+
+                    float f_index = 0.0;
+                    f_index = first_slice+k+0.0;
+
+                    weight_map[X][Y][k] =s(f_index);
+
+                    if (weight_map[X][Y][k]>0){
+
+                        P[area] = first_slice + k;
+                        volume_roi++;
+                        roi(P[0],P[1],P[2])=add;
+
+                    }
+                }
+            }
+        }
+
+        qDebug()<<"------>> Toal pixel volume : "<<size_x*size_y*size_z<<", Segmented volume: "<<volume_roi;
+
+        //to generate file with weights, use:
+        for (int l = 0;l<size_z;l++){
+
+            ostringstream convert;   // stream used for the conversion
+
+            convert << l;
+
+            string s = "map_weight_l" + convert.str()+".ppm" ;
+            ofstream fileOut01;
+            fileOut01.open(s.c_str());
+
+            fileOut01 << "P3" << endl;
+            fileOut01 << size_x << " " << size_y << endl;
+            fileOut01 << 255 << endl;
+
+            //if (fileOut.isopen())
+            for (int i = 0;i<size_x;i++){
+                for (int j = 0;j<size_y;j++){
+                    int r = 0, g = 0, b = 100;
+                    if (weight_map[i][j][l]<0){
+                        r = (abs( weight_map[i][j][l]))%255;
+                        g = 0;
+                        b = 50+ (abs( weight_map[i][j][l]))%20;
+                    }else{
+                        g = (abs( weight_map[i][j][l]))%255;
+                        r = 0;
+                        b = (abs( 100 - weight_map[i][j][l]))%255;
+                        //std::cout <<" Green: "<< weight_map[i][j]<< "  ";
+                    }
+                    fileOut01 << r<< " "<< g << " "<< b << endl;
+                    if (binary_map[i][j]>0){
+                        r = 255;b = 0;
+                    }else{
+                        b = 255;r = 0;
+                    }
+                    //fileOut << r<< " "<< g << " "<< b << endl;
+                }
+                //std::cout << std::endl;
+            }
+            //fileOut.close();
+            fileOut01.close();
+        }
+
+    }
+
+
+    ////////////////////////////////
+    /// Test generating functions //
+    ////////////////////////////////
+
+
+
+    // Draw a cilinter radius of brush and custom heigh
+    void drawCilinder(const unsigned int area,const bool add)
+    {
+        int z,i;
+        int dir_fixed;
+
+        int dir[2]; getPlaneDirections(dir,area);
+        int x=coord[dir[0]],y=coord[dir[1]];
+        bool tru=true;
+        CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
+
+        first_slice = 50;
+        last_slice = 110;
+
+        x = 70;
+        y = 70;
+
+        brushSize = 50;
+
+        tmp.draw_circle(x,y,brushSize,&tru);
+        int P[3];
+        P[area]=coord[area];
+
+        qDebug() << ">>>>> Slices: "<<  first_slice<< last_slice;
+
+
+        // To know the number of fixed plane:
+        for (i=0; i<3; i++){
+            if ( (dir[0]!=i) && (dir[1]!=i) ){
+                dir_fixed = i;
+            }
+        }
+
+        int start_slice = P[area];
+        int num_slice = abs(first_slice - last_slice);
+        int fin_slice = start_slice + num_slice;
+
+        num_slice = abs(first_slice - last_slice);
+
+        if (last_slice<first_slice){
+
+            first_slice = last_slice;
+            last_slice = first_slice + num_slice;
+        }
+        if (last_slice == first_slice ){
+            return;
+        }
+
+        start_slice = first_slice;
+        fin_slice = last_slice;
+
+        t_roi.resize(dim[0],dim[1],dim[2],1);
+        t_for_spline_roi.resize(dim[0],dim[1],dim[2],1);
+        c_roi.resize(dim[0],dim[1],dim[2],1);
+
+        P[dir_fixed] = first_slice;
+
+        for (i=0; i<=num_slice; i++){
+            cimg_forXY(tmp,X,Y){
+
+                if(tmp(X,Y)){
+                    P[dir[0]]=X+i;
+                    P[dir[1]]=Y;
+                    roi(P[0],P[1],P[2])=add;
+                    if ((i==0) or (i==num_slice)){
+                        t_roi(P[0],P[1],P[2])=add;
+                    }
+                    if ((i==0) or (i==num_slice)or (i==20)or (i==40)){
+                        t_for_spline_roi(P[0],P[1],P[2])=add;
+                    }
+                }
+            }
+            P[dir_fixed]++;
+        }
+        for ( i = 0; i < dim[0]; i++)
+            for (int j = 0; j < dim[1]; j++)
+                for (int k = 0; k < dim[2]; k++)
+                    c_roi(i,j,k) = roi(i,j,k);
+
+    }
+
+
+    void copyRoi(const unsigned int area,const bool add)
+    {
+        int z,i;
+
+
+        int P[3];
+        P[area]=coord[area];
+
+        saved_roi.resize(dim[0],dim[1],dim[2],1);
+
+        for ( i = 0; i < dim[0]; i++)
+            for (int j = 0; j < dim[1]; j++)
+                for (int k = 0; k < dim[2]; k++){
+                    saved_roi(i,j,k) = roi(i,j,k);
+                    if (saved_roi(i,j,k))
+                        qDebug()<<"saved_roi(i,j,k)"<<i<<j<<k;
+                }
+
+
+    }
+
+
+    void compareRoi (const unsigned int area,const bool add){
+
+        float err = 0.0;
+        int num_slice = abs(first_slice - last_slice);
+        loc_err.resize(dim[area],0);
+        loc_err_rel.resize(dim[area],0.0);
+        loc_err_abs.resize(dim[area],0.0);
+
+        int dir[2]; getPlaneDirections(dir,area);
+
+        int P[3];
+        P[area]=first_slice+1;
+        int total_space = dim[dir[0]]*dim[dir[1]];
+        qDebug()<<">>>> F E slice"<<first_slice<<last_slice<<num_slice<<dim[area];
+
+        for (int z=1; z<num_slice; z++){
+            int loc_error = 0;
+            int total_sp = 0;
+            for (int x = 0; x< dim[dir[0]]; x++){
+                for (int y = 0; y< dim[dir[1]]; y++){
+                    P[dir[0]]=x;
+                    P[dir[1]]=y;
+                    if (roi(P[0],P[1],P[2])){
+                        total_sp++;
+                               qDebug()<<">>>> roi(i,j,k)"<<x<<y<<z;
+                    }
+
+                    if (saved_roi(P[0],P[1],P[2])!=roi(P[0],P[1],P[2])){
+                        loc_error++;
+                               qDebug()<<"saved_roi(i,j,k)"<<x<<y<<z;
+                    }
+
+                }
+            }
+            err = loc_error;
+            loc_err[z] = err;
+            loc_err_rel[z] = err/total_sp;
+            loc_err_abs[z] = err/total_space;
+
+            P[area]++;
+        }
+
+        cout<<"Number of error pixels = "<<endl;
+        for (int i = 0; i< num_slice;i++){
+            cout<<loc_err[i]<<endl;
+        }
+        cout<<"Error % of ROI = "<<endl;
+        for (int i = 0; i< num_slice;i++){
+            cout << std::setprecision(9) << (loc_err_rel[i]*100) << endl;
+        }
+        cout<<"Error % of total slice volume = "<<endl;
+        for (int i = 0; i< num_slice;i++){
+            cout << std::setprecision(11) << (loc_err_abs[i]*100) << endl;
+        }
+
+    }
+
+
+    void clearSegment(const unsigned int area,const bool add){
+
+        int z,i;
+        int dir_fixed;
+
+        int dir[2]; getPlaneDirections(dir,area);
+        int x=coord[dir[0]],y=coord[dir[1]];
+        bool tru=true;
+        bool fal=false;
+        CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
+
+        first_slice = 50;
+        last_slice = 110;
+
+        x = 70;
+        y = 70;
+
+
+        int P[3];
+        P[area]=coord[area];
+
+        int num_slice = last_slice - first_slice;
+        roi.fill(false);
+        roi = t_roi;
+    }
+
+
+
+    void generateTest(const unsigned int area,const bool add){
+        first_slice = 50;
+        last_slice = 110;
+        float err = 0.0;
+
+        selectBrushMulLayers( area, add);
+        int num_slice = last_slice - first_slice;
+        loc_err.resize(num_slice+1,0);
+        loc_err_rel.resize(num_slice+1,0);
+        loc_err_abs.resize(num_slice+1,0);
+
+        int dir[2]; getPlaneDirections(dir,area);
+
+        int P[3];
+        P[area]=first_slice+1;
+        int total_space = dim[dir[0]]*dim[dir[1]];
+
+        for (int z=1; z<num_slice; z++){
+            int loc_error = 0;
+            int total_sp = 0;
+            for (int x = 0; x< dim[dir[0]]; x++){
+                for (int y = 0; y< dim[dir[1]]; y++){
+                    P[dir[0]]=x;
+                    P[dir[1]]=y;
+                    if (c_roi(P[0],P[1],P[2])){
+                        total_sp++;
+                    }
+
+                    if (c_roi(P[0],P[1],P[2])!=roi(P[0],P[1],P[2])){
+                        loc_error++;
+                    }
+
+                }
+            }
+            err = loc_error;
+            loc_err[z] = err;
+            loc_err_rel[z] = err/total_sp;
+            loc_err_abs[z] = err/total_space;
+
+            P[area]++;
+        }
+
+        cout<<"Number of error pixels = "<<endl;
+        for (int i = 0; i< num_slice;i++){
+            cout<<loc_err[i]<<endl;
+        }
+        cout<<"Error % of ROI = "<<endl;
+        for (int i = 0; i< num_slice;i++){
+            cout << std::setprecision(9) << (loc_err_rel[i]*100) << endl;
+        }
+        cout<<"Error % of total slice volume = "<<endl;
+        for (int i = 0; i< num_slice;i++){
+            cout << std::setprecision(11) << (loc_err_abs[i]*100) << endl;
+        }
+
+    }
+
+    //////////////////
+    ///  generate Test for spline
+    //////////////////
+
+    void generateTestSpline(const unsigned int area,const bool add){
+        first_slice = 50;
+        last_slice = 110;
+        float err = 0.0;
+
+        //loc_err.resize(dim[area],0);
+
+        interp_nums.push_back(50.0);
+        interp_nums.push_back(70.0);
+        interp_nums.push_back(90.0);
+        interp_nums.push_back(110.0);
+        interp_points = 4;
+
+
+        splineInterpolation( area, add);
+        int num_slice = last_slice - first_slice;
+        loc_err.resize(num_slice+1,0);
+        loc_err_rel.resize(num_slice+1,0);
+        loc_err_abs.resize(num_slice+1,0);
+
+        int dir[2]; getPlaneDirections(dir,area);
+
+        int P[3];
+        P[area]=first_slice+1;
+        int total_space = dim[dir[0]]*dim[dir[1]];
+
+        for (int z=1; z<num_slice; z++){
+            int loc_error = 0;
+            int total_sp = 0;
+            for (int x = 0; x< dim[dir[0]]; x++){
+                for (int y = 0; y< dim[dir[1]]; y++){
+                    P[dir[0]]=x;
+                    P[dir[1]]=y;
+                    if (c_roi(P[0],P[1],P[2])){
+                        total_sp++;
+                    }
+
+                    if (c_roi(P[0],P[1],P[2])!=roi(P[0],P[1],P[2])){
+                        loc_error++;
+                    }
+
+                }
+            }
+            err = loc_error;
+            loc_err[z] = err;
+            loc_err_rel[z] = err/total_sp;
+            loc_err_abs[z] = err/total_space;
+
+            P[area]++;
+        }
+    }
+
+
+    // << Patotskaya
+
+
     void selectSeed(const unsigned int area)
     {
         for(unsigned int i=0;i<3;++i)  seed[i]=coord[i];
