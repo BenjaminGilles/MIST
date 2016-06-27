@@ -625,10 +625,10 @@ public:
     }
 
     // >>> Patotskaya
-    void setWeightsVect_99( int size_x, int size_y, int size_z,
+    void setWeightsVect_99( int size_x, int size_y, int /*size_z*/,
                             vector< vector<bool> > & binary_map,
                             vector< vector< vector<int> > > & weight_map,
-                            int slice_fixed, int num_slice){
+                            int slice_fixed, int /*num_slice*/){
 
         int mask_left[3][3] = {{14,10,14},
                                {10,0,0},
@@ -851,10 +851,10 @@ public:
 
 
 
-    void setWeightsVect_990( int size_x, int size_y, int size_z,
+    void setWeightsVect_990( int size_x, int size_y, int /*size_z*/,
                              vector< vector<bool> > & binary_map,
                              vector< vector< vector<int> > > & weight_map,
-                             int slice_fixed, int num_slice){
+                             int slice_fixed, int /*num_slice*/){
 
         int mask_left[3][3] = {{14,10,14},
                                {10,0,0},
@@ -1053,13 +1053,13 @@ public:
 
 
         int dir[2]; getPlaneDirections(dir,area);
-        int x=coord[dir[0]],y=coord[dir[1]];
+        //int x=coord[dir[0]],y=coord[dir[1]];
         int P[3];
         P[area]=coord[area];
 
-        int start_slice;
-        int num_slice;
-        int fin_slice;
+//        int start_slice;
+//        int num_slice;
+//        int fin_slice;
 
         // Map roi on distance weights map
         int size_x =dim[dir[0]], size_y =dim[dir[1]], size_z = dim[area];
@@ -1123,11 +1123,11 @@ public:
 
     void selectBrushMulLayers(const unsigned int area,const bool add)
     {
-        int z,i;
+        //int z,i;
 
         int dir[2]; getPlaneDirections(dir,area);
-        int x=coord[dir[0]],y=coord[dir[1]];
-        bool tru=true;
+//        int x=coord[dir[0]],y=coord[dir[1]];
+//        bool tru=true;
         CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
         //tmp.draw_circle(x,y,brushSize,&tru);
         int P[3];
@@ -1276,11 +1276,11 @@ public:
     ///////////////////////////
     void splineInterpolation (const unsigned int area,const bool add)
     {
-        int z,i;
+        //int z,i;
 
         int dir[2]; getPlaneDirections(dir,area);
-        int x=coord[dir[0]],y=coord[dir[1]];
-        bool tru=true;
+//        int x=coord[dir[0]],y=coord[dir[1]];
+//        bool tru=true;
         CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
 
         int P[3];
@@ -1457,7 +1457,7 @@ public:
     // Draw a cilinter radius of brush and custom heigh
     void drawCilinder(const unsigned int area,const bool add)
     {
-        int z,i;
+        //int z,i;
         int dir_fixed;
 
         int dir[2]; getPlaneDirections(dir,area);
@@ -1481,7 +1481,7 @@ public:
 
 
         // To know the number of fixed plane:
-        for (i=0; i<3; i++){
+        for (int i=0; i<3; i++){
             if ( (dir[0]!=i) && (dir[1]!=i) ){
                 dir_fixed = i;
             }
@@ -1511,7 +1511,7 @@ public:
 
         P[dir_fixed] = first_slice;
 
-        for (i=0; i<=num_slice; i++){
+        for (int i=0; i<=num_slice; i++){
             cimg_forXY(tmp,X,Y){
 
                 if(tmp(X,Y)){
@@ -1528,7 +1528,7 @@ public:
             }
             P[dir_fixed]++;
         }
-        for ( i = 0; i < dim[0]; i++)
+        for (int i = 0; i < dim[0]; i++)
             for (int j = 0; j < dim[1]; j++)
                 for (int k = 0; k < dim[2]; k++)
                     c_roi(i,j,k) = roi(i,j,k);
@@ -1536,9 +1536,9 @@ public:
     }
 
 
-    void copyRoi(const unsigned int area,const bool add)
+    void copyRoi(const unsigned int area,const bool /*add*/)
     {
-        int z,i;
+        //int z,i;
 
 
         int P[3];
@@ -1546,7 +1546,7 @@ public:
 
         saved_roi.resize(dim[0],dim[1],dim[2],1);
 
-        for ( i = 0; i < dim[0]; i++)
+        for (int i = 0; i < dim[0]; i++)
             for (int j = 0; j < dim[1]; j++)
                 for (int k = 0; k < dim[2]; k++){
                     saved_roi(i,j,k) = roi(i,j,k);
@@ -1558,7 +1558,7 @@ public:
     }
 
 
-    void compareRoi (const unsigned int area,const bool add){
+    void compareRoi (const unsigned int area,const bool /*add*/){
 
         float err = 0.0;
         int num_slice = abs(first_slice - last_slice);
@@ -1616,15 +1616,15 @@ public:
     }
 
 
-    void clearSegment(const unsigned int area,const bool add){
+    void clearSegment(const unsigned int area,const bool /*add*/){
 
-        int z,i;
-        int dir_fixed;
+//        int z,i;
+//        int dir_fixed;
 
         int dir[2]; getPlaneDirections(dir,area);
         int x=coord[dir[0]],y=coord[dir[1]];
-        bool tru=true;
-        bool fal=false;
+//        bool tru=true;
+//        bool fal=false;
         CImg<bool> tmp(dim[dir[0]],dim[dir[1]],1,1,false);
 
         first_slice = 50;
@@ -1637,7 +1637,7 @@ public:
         int P[3];
         P[area]=coord[area];
 
-        int num_slice = last_slice - first_slice;
+//        int num_slice = last_slice - first_slice;
         roi.fill(false);
         roi = t_roi;
     }

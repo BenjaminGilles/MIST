@@ -5,7 +5,6 @@
 //#define BRUSH_H
 
 #include <tools/baseTool.h>
-#include <widgets/qSlice.h>
 #include <QLabel>
 #include <QSpinBox>
 #include <QToolBar>
@@ -21,7 +20,7 @@ public:
     int ar_fixed = 2; //First window by default
     bool interp_type = false; //Linear interp by def
 
-    Segment3DTool(MPRImageView* v,image<T>* i):baseTool(v,i),rangew(NULL)
+    Segment3DTool(MPRImageView* v,image<T>* i):baseTool(v,i)
     {}
     ~Segment3DTool()
     {}
@@ -170,13 +169,12 @@ public slots:
 
 
     void handleButton(){
-        bool tru = true;
 
-        int pos,area;
-        int dir[2],dimz;
+        int area;
+        int dir[2];
         area = ar_fixed;
 
-        img->getPlaneDirections(dir,pos);
+        //img->getPlaneDirections(dir,pos);
         /*for (int d = 0;d<3;d++){
             if ((d != dir[0]) and (d != dir[1]) )
                 area = d;
@@ -210,9 +208,6 @@ public slots:
 
 private:
 
-    QRangeWidget *rangew ;
-    T range[2];
-    QLineEdit* vsize_edit[3];
 
 
 };
