@@ -28,13 +28,19 @@ public:
     CImg<float> normals;
     double center[3];
 
-    bool save(const std::string& objFile)
+    bool save(const std::string& objFile, const std::string& mtlFile, const unsigned char col[3])
     {
         if(!vertices.width()) return false;
 
+        QFileInfo fileInfo(QString(mtlFile.c_str()));
+        QString mtlshortFile=fileInfo.fileName();
+
         std::ofstream objStream (objFile.c_str());
         if(!objStream.is_open()) return false;
+        objStream<<"mtllib "<<mtlshortFile.toStdString().c_str()<<std::endl;
+        objStream<<std::endl<<"usemtl \""<<"mat\""<<std::endl;
         cimg_forX(vertices,j) objStream<<"v "<<vertices(j,0)<<" "<<vertices(j,1)<<" "<<vertices(j,2)<<std::endl;
+
         cimglist_for(faces,l)
         {
             objStream<<"f";
@@ -42,6 +48,13 @@ public:
             objStream<<std::endl;
         }
         objStream.close();
+
+        std::ofstream mtlStream (mtlFile.c_str());
+        if(!mtlStream.is_open()) return false;
+        mtlStream<<"newmtl \""<<"mat\""<<std::endl;
+        mtlStream<<"Kd "; for(unsigned int k=0;k<3;k++)  mtlStream<<" "<<(double)col[k]/255.; mtlStream<<std::endl;
+        mtlStream<<std::endl;
+        mtlStream.close();
         return true;
     }
 
@@ -395,16 +408,29 @@ public:
         roi.resize(newDim[0],newDim[1],newDim[2],-100,1);
         cimg_foroff(roif,off) if(roif[off]>0.5) roi[off]=true; else roi[off]=false;
 
+                cimg_library::CImg<float> metric_distance(2,2,2,1,0);
+                metric_distance(1,0,0)=this->voxelSize[0];
+                metric_distance(0,1,0)=this->voxelSize[1];
+                metric_distance(0,0,1)=this->voxelSize[2];
+                metric_distance(1,1,0)=sqrt(this->voxelSize[0]*this->voxelSize[0]+this->voxelSize[1]*this->voxelSize[1]);
+                metric_distance(1,0,1)=sqrt(this->voxelSize[0]*this->voxelSize[0]+this->voxelSize[2]*this->voxelSize[2]);
+                metric_distance(0,1,1)=sqrt(this->voxelSize[1]*this->voxelSize[1]+this->voxelSize[2]*this->voxelSize[2]);
+                metric_distance(1,1,1)=sqrt(this->voxelSize[0]*this->voxelSize[0]+this->voxelSize[1]*this->voxelSize[1]+this->voxelSize[2]*this->voxelSize[2]);
+
         CImg<unsigned char> newlabel(newDim[0],newDim[1],newDim[2]); newlabel.fill(0);
         for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
         {
             bool empty=true;
             CImg<float> labelf(label.width(),label.height(),label.depth(),label.spectrum(),0.0);
             cimg_forXYZ(label,x,y,z) if(label(x,y,z)==(unsigned char)i) { labelf(x,y,z)=1.0; empty=false; }
+
+             labelf=   labelf.get_distance ( 1.0 , metric_distance) - labelf.get_distance ( 0.0 , metric_distance);
+
+
             if(!empty)
             {
                 labelf.resize(newDim[0],newDim[1],newDim[2],-100,3);
-                cimg_foroff(labelf,off) if(labelf[off]>0.5) newlabel[off]=(unsigned char)i;
+                cimg_foroff(labelf,off) if(labelf[off]<0) newlabel[off]=(unsigned char)i;
             }
         }
         label=newlabel;
@@ -1097,9 +1123,9 @@ public:
     void getPlaneSize(double &z, double xy[2], const unsigned int area)
     {
         int dir[2]; getPlaneDirections(dir,area);
-        xy[0]=voxelSize[dir[0]]*(double)dimBB[dir[0]];
-        xy[1]=voxelSize[dir[1]]*(double)dimBB[dir[1]];
-        z=voxelSize[area]*(double)dimBB[area];
+        xy[0]=voxelSize[dir[0]]*(double)dimBB[dir[0]] /voxelSize[0];
+        xy[1]=voxelSize[dir[1]]*(double)dimBB[dir[1]] /voxelSize[0];
+        z=voxelSize[area]*(double)dimBB[area] /voxelSize[0];
     }
 
 
@@ -1277,7 +1303,12 @@ public:
     bool saveObjs(const std::string& path)
     {
         for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
-            meshes[i].save(path+std::string("/")+labelName[i]+std::string(".obj"));
+        {
+            unsigned char col[3]={palette(i,0,0,0),palette(i,0,0,1),palette(i,0,0,2)};
+            QString name (labelName[i].c_str());
+            name.replace(' ','_');
+            meshes[i].save(path+std::string("/")+name.toStdString()+std::string(".obj"),path+std::string("/")+name.toStdString()+std::string(".mtl"),col);
+        }
         return true;
     }
 
