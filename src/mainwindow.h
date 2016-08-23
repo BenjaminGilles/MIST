@@ -30,6 +30,7 @@ public:
 public slots:
     void about();
     void load();
+    void stack();
     void saveAs();
     void loadSegmentation();
     void saveSegmentation();
@@ -70,6 +71,7 @@ private:
     QToolBar *toolBar;
 
     QAction *openAct;
+    QAction *stackAct;
     QAction *saveAsAct;
     QAction *openLabAct;
     QAction *saveLabAsAct;

@@ -39,6 +39,7 @@ MainWindow::~MainWindow()
     delete toolBar;
 
     delete openAct;
+    delete stackAct;
     delete saveAsAct;
     delete openLabAct;
     delete saveLabAct;
@@ -59,6 +60,10 @@ void MainWindow::setup(const QString filename)
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open image"));
     connect(openAct, SIGNAL(triggered()), this, SLOT(load()));
+
+    stackAct = new QAction(QIcon(":openimg")  , tr("&Stack image..."), this);
+    stackAct->setStatusTip(tr("Stack image"));
+    connect(stackAct, SIGNAL(triggered()), this, SLOT(stack()));
 
     saveAsAct = new QAction(QIcon(":save"), tr("&Save image as..."), this);
     saveAsAct->setStatusTip(tr("Save image as"));
@@ -85,6 +90,7 @@ void MainWindow::setup(const QString filename)
 
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
+    fileMenu->addAction(stackAct);
     fileMenu->addAction(saveAsAct);
     fileMenu->addSeparator();
     fileMenu->addAction(openLabAct);
@@ -299,9 +305,26 @@ void MainWindow::load()
         reinit();
         changeStatus(tr("Opened '%1'").arg(fileName));
     }
-    else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot open '%1'").arg(fileName));
+    else  QMessageBox::warning(this, tr("MIST"), tr("Cannot open '%1'").arg(fileName));
 }
 
+
+
+void MainWindow::stack()
+{
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                                    tr("Load Image"),QString(img.currentPath.c_str()),
+                                                    tr("Images (*.mhd *.dcm *.hdr)"));
+
+    if (fileName.isEmpty()) return;
+
+    if(img.stackImage(fileName.toStdString().c_str()))
+    {
+        reinit();
+        changeStatus(tr("Opened '%1'").arg(fileName));
+    }
+    else  QMessageBox::warning(this, tr("MIST"), tr("Cannot open '%1'").arg(fileName));
+}
 
 
 void MainWindow::saveAs()
@@ -315,7 +338,7 @@ void MainWindow::saveAs()
     {
         changeStatus(tr("Saved '%1'").arg(fileName));
     }
-    else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot save '%1'").arg(fileName));
+    else  QMessageBox::warning(this, tr("MIST"), tr("Cannot save '%1'").arg(fileName));
 
 }
 
@@ -342,7 +365,7 @@ void MainWindow::loadSegmentation()
         changeStatus(tr("Opened '%1'").arg(fileName));
         mprview->Render(true);
     }
-    else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot open '%1'").arg(fileName));
+    else  QMessageBox::warning(this, tr("MIST"), tr("Cannot open '%1'").arg(fileName));
 }
 
 
@@ -366,21 +389,21 @@ void MainWindow::saveAsSegmentation()
         img.saveNames();
         changeStatus(tr("Saved '%1'").arg(fileName));
     }
-    else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot save '%1'").arg(fileName));
+    else  QMessageBox::warning(this, tr("MIST"), tr("Cannot save '%1'").arg(fileName));
 
 }
 
 void MainWindow::saveSegmentation()
 {
     QString fileName(img.labelFileName.c_str());
-    if(QMessageBox::question(NULL, tr("qtSegmentation"),tr("Overwrite '%1' ?").arg(fileName))==QMessageBox::No) return;
+    if(QMessageBox::question(NULL, tr("MIST"),tr("Overwrite '%1' ?").arg(fileName))==QMessageBox::No) return;
 
     if(img.saveLabel(fileName.toStdString().c_str()))
     {
         img.saveNames();
         changeStatus(tr("Saved '%1'").arg(fileName));
     }
-    else  QMessageBox::warning(this, tr("QtSegmentation"), tr("Cannot save '%1'").arg(fileName));
+    else  QMessageBox::warning(this, tr("MIST"), tr("Cannot save '%1'").arg(fileName));
 
 }
 
