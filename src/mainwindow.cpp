@@ -26,7 +26,7 @@ MainWindow::~MainWindow()
     delete regionGrowing;
     delete marchingCubes;
     delete landmarks;
-    delete segmentation3D; //Patotskaya
+    // delete segmentation3D; //Patotskaya
 #ifdef USEGL
     delete glwidget;
 # endif
@@ -198,7 +198,7 @@ QWidget *MainWindow::createTools()
     regionGrowing = new regionGrowingTool(mprview,&img);
     landmarks = new landmarksTool(mprview,&img);
     marchingCubes = new marchingCubesTool(mprview,&img);
-    segmentation3D = new segmentation3DTool(mprview,&img); //Patotskaya
+    // segmentation3D = new segmentation3DTool(mprview,&img); //Patotskaya
 
     QTabWidget* tab = new QTabWidget(this);
     tab->setIconSize(QSize(30,30));
@@ -229,9 +229,9 @@ QWidget *MainWindow::createTools()
 
     // >>> Patotskaya
     // Add tool
-    tab->addTab(segmentation3D->getMenu(this),tr(""));
-    tab->setTabIcon(6,QIcon(":segm3Dicon"));
-    tab->setTabToolTip(6,tr("Segmentation 3D tool"));
+//    tab->addTab(segmentation3D->getMenu(this),tr(""));
+//    tab->setTabIcon(6,QIcon(":segm3Dicon"));
+//    tab->setTabToolTip(6,tr("Segmentation 3D tool"));
     // <<< Patotskaya
 
     connect(tab, SIGNAL(currentChanged(int)),this, SLOT(ToolChanged(int)));
@@ -269,11 +269,6 @@ void MainWindow::ToolChanged(int index)
     case 5:
         mprview->setViewMode(GraphView::MarchingCubes);
         break;
-    //>>> Patotksya
-    case 6:
-        mprview->setViewMode(GraphView::Segmentation3D);
-        break;
-    //<<< Patotksya
     default:
         mprview->setViewMode(GraphView::Navigation);
         break;

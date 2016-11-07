@@ -175,12 +175,12 @@ void GraphView::mousePressEvent(QMouseEvent *mouseEvent)
         Render(true);
     }
     //Segmentation3D
-    if(mode==Segmentation3D && pressed==Qt::LeftButton)
-    {
-        img->selectBrushMulLayers(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
-        //img->selectBrush(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
-        Render(true);
-    }
+//    if(mode==Segmentation3D && pressed==Qt::LeftButton)
+//    {
+//        img->selectBrushMulLayers(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
+//        //img->selectBrush(area,!pressedModifiers.testFlag(Qt::ShiftModifier));
+//        Render(true);
+//    }
     else if(mode==RegionGrowing && pressed==Qt::LeftButton)
     {
         img->selectSeed(area);
