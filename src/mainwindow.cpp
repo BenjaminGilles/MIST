@@ -296,7 +296,7 @@ void MainWindow::load()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     tr("Load Image"),QString(img.currentPath.c_str()),
-                                                    tr("Images (*.mhd *.dcm *.hdr)"));
+                                                    tr("Images (*.mhd *.dcm *.hdr *.png *.bmp *.jpg)"));
 
     if (fileName.isEmpty()) return;
 
