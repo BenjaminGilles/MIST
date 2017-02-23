@@ -10,8 +10,11 @@
 
 #define cimg_display 0
 #include "CImg.h"
+#include <zlib.h>
 
 using namespace cimg_library;
+
+
 
 template<typename T,typename F>
 bool save_metaimage(const CImgList<T>& img,const char *const headerFilename, const F *const scale=0, const F *const translation=0, const F *const affine=0, F offsetT=0, F scaleT=0, int isPerspective=0)
@@ -74,6 +77,98 @@ bool save_metaimage(const CImgList<T>& img,const char *const headerFilename, con
 
 
 
+template<typename T>
+inline int fread_gz(T *const ptr, const unsigned int nmemb, gzFile stream)
+{
+    if (!ptr || !stream)
+        throw CImgArgumentException("cimg::fread_gz() : Invalid reading request of %u %s%s from file %p to buffer %p.",
+                                    nmemb,cimg::type<T>::string(),nmemb>1?"s":"",stream,ptr);
+    if (!nmemb) return 0;
+    const unsigned long wlimitT = 63*1024*1024, wlimit = wlimitT/sizeof(T);
+    unsigned long to_read = nmemb, al_read = 0, l_to_read = 0, l_al_read = 0;
+    do {
+        l_to_read = to_read<wlimit?to_read:wlimit;
+        l_al_read = (unsigned long)gzread(stream,(void*)(ptr + al_read),l_to_read*sizeof(T))/sizeof(T);
+        al_read+=l_al_read;
+        to_read-=l_al_read;
+    } while (l_to_read==l_al_read && to_read>0);
+    if (to_read>0)
+        std::cout << "Warning: cimg::fread_gz() : Only " << al_read << "/" << nmemb << " bytes could be read from file." << std::endl;
+    return (int)al_read;
+}
+
+
+template<typename Tin,typename Tout>
+inline int readAndConvert(CImgList<Tout>& img, const char* filename, const bool isCompressed=false, const bool invert_endianness=false)
+{
+    const unsigned int nb = (unsigned)(img(0).width()*img(0).height()*img(0).depth()*img(0).spectrum()); // number of values to read per image
+
+    if(isCompressed)
+    {
+        gzFile file = gzopen(filename, "rb");
+        if(!file) return 0;
+        Tin *const buffer = new Tin[nb];
+        cimglist_for(img,l)
+        {
+            fread_gz(buffer,nb,file);
+            if (invert_endianness) cimg::invert_endianness(buffer,nb);
+            cimg_foroff(img(l),off) img(l)._data[off] = (Tout)(buffer[off]);
+        }
+        delete[] buffer;
+        gzclose(file);
+    }
+    else
+    {
+        std::FILE *const file = std::fopen(filename,"rb");
+        if(!file) return 0;
+        Tin *const buffer = new Tin[nb];
+        cimglist_for(img,l)
+        {
+            cimg::fread(buffer,nb,file);
+            if (invert_endianness) cimg::invert_endianness(buffer,nb);
+            cimg_foroff(img(l),off) img(l)._data[off] = (Tout)(buffer[off]);
+        }
+        delete[] buffer;
+        cimg::fclose(file);
+    }
+
+    return 1;
+}
+
+
+template<typename Tout>
+inline int read(CImgList<Tout>& img, const char* filename, const bool isCompressed=false, const bool invert_endianness=false)
+{
+    const unsigned int nb = (unsigned)(img(0).width()*img(0).height()*img(0).depth()*img(0).spectrum()); // number of values to read per image
+
+    if(isCompressed)
+    {
+        gzFile file = gzopen(filename, "rb");
+        if(!file) return 0;
+        cimglist_for(img,l)
+        {
+            fread_gz(img(l)._data,nb,file);
+            if (invert_endianness) cimg::invert_endianness(img(l)._data,nb);
+        }
+        gzclose(file);
+    }
+    else
+    {
+        std::FILE *const file = std::fopen(filename,"rb");
+        if(!file) return 0;
+        cimglist_for(img,l)
+        {
+            cimg::fread(img(l)._data,nb,file);
+            if (invert_endianness) cimg::invert_endianness(img(l)._data,nb);
+        }
+        cimg::fclose(file);
+    }
+
+    return 1;
+}
+
+
+
 template<typename T,typename F>
 CImgList<T> load_metaimage(const char *const  headerFilename, F *const scale=0, F *const translation=0, F *const affine=0, F *const offsetT=0, F *const scaleT=0, int *const isPerspective=0)
 {
@@ -123,7 +218,7 @@ CImgList<T> load_metaimage(const char *const  headerFilename, F *const scale=0, 
             for(unsigned int i=0;i<nbdims;i++) fileStream >> val[i];
             if(scale) for(unsigned int i=0;i<3;i++) if(i<nbdims) scale[i] = (F)val[i];
             if(scaleT) if(nbdims>3) *scaleT = (F)val[3];
-       }
+        }
         else if(!str.compare("Position") || !str.compare("Offset") || !str.compare("translation") || !str.compare("origin"))
         {
             fileStream >> str2; // '='
@@ -177,109 +272,29 @@ CImgList<T> load_metaimage(const char *const  headerFilename, F *const scale=0, 
     }
 
     ret.assign(dim[3],dim[0],dim[1],dim[2],nbchannels);
-    unsigned int nb = dim[0]*dim[1]*dim[2]*nbchannels;
-    std::FILE *const nfile = std::fopen(imageFilename.c_str(),"rb");
-    if(!nfile) return ret;
+    bool isCompressed = imageFilename.find(".gz")!=std::string::npos;
 
-    if(inputType==std::string(cimg::type<T>::string()))
-    {
-        cimglist_for(ret,l)  cimg::fread(ret(l)._data,nb,nfile);
-    }
+    if(inputType==std::string(cimg::type<T>::string()))        read<T>(ret,imageFilename.c_str(),isCompressed);
     else
     {
-        if(inputType==std::string("char"))
-        {
-            char *const buffer = new char[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("double"))
-        {
-            double *const buffer = new double[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("float"))
-        {
-            float *const buffer = new float[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("int"))
-        {
-            int *const buffer = new int[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("long"))
-        {
-            long *const buffer = new long[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("short"))
-        {
-            short *const buffer = new short[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("unsigned char"))
-        {
-            unsigned char *const buffer = new unsigned char[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("unsigned int"))
-        {
-            unsigned int *const buffer = new unsigned int[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("unsigned long"))
-        {
-            unsigned long *const buffer = new unsigned long[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("unsigned short"))
-        {
-            unsigned short *const buffer = new unsigned short[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
-        else if(inputType==std::string("bool"))
-        {
-            bool *const buffer = new bool[dim[3]*nb];
-            cimg::fread(buffer,dim[3]*nb,nfile);
-            //if (endian) cimg::invert_endianness(buffer,dim[3]*nb);
-            cimglist_for(ret,l) cimg_foroff(ret(l),off) ret(l)._data[off] = (T)(buffer[off+l*nb]);
-            delete[] buffer;
-        }
+        if(inputType==std::string("char"))                  readAndConvert<char,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("double"))           readAndConvert<double,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("float"))            readAndConvert<float,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("int"))              readAndConvert<int,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("long"))             readAndConvert<long,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("short"))            readAndConvert<short,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("unsigned char"))    readAndConvert<unsigned char,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("unsigned int"))     readAndConvert<unsigned int,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("unsigned long"))    readAndConvert<unsigned long,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("unsigned short"))   readAndConvert<unsigned short,T>(ret,imageFilename.c_str(),isCompressed);
+        else if(inputType==std::string("bool"))             readAndConvert<bool,T>(ret,imageFilename.c_str(),isCompressed);
     }
-    cimg::fclose(nfile);
 
     return ret;
 }
+
+
+
 
 
 #endif // CIMGTOOLS_H
