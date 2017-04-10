@@ -211,25 +211,25 @@ QWidget *MainWindow::createTools()
     tab->setTabIcon(1,QIcon(":morpho"));
     tab->setTabToolTip(1,tr("Morphological operators"));
 
+    tab->addTab(labelInterpolation->getMenu(this),tr(""));
+    tab->setTabIcon(2,QIcon(":segm3Dicon"));
+    tab->setTabToolTip(2,tr("Interpolation tool"));
+
     tab->addTab(brush->getMenu(this),tr(""));
-    tab->setTabIcon(2,QIcon(":brush"));
-    tab->setTabToolTip(2,tr("Brush tool"));
+    tab->setTabIcon(3,QIcon(":brush"));
+    tab->setTabToolTip(3,tr("Brush tool"));
 
     tab->addTab(regionGrowing->getMenu(this),tr(""));
-    tab->setTabIcon(3,QIcon(":regionGrow"));
-    tab->setTabToolTip(3,tr("Region growing"));
+    tab->setTabIcon(4,QIcon(":regionGrow"));
+    tab->setTabToolTip(4,tr("Region growing"));
 
     tab->addTab(landmarks->getMenu(this),tr(""));
-    tab->setTabIcon(4,QIcon(":landmark"));
-    tab->setTabToolTip(4,tr("Landmarks"));
+    tab->setTabIcon(5,QIcon(":landmark"));
+    tab->setTabToolTip(5,tr("Landmarks"));
 
     tab->addTab(marchingCubes->getMenu(this),tr(""));
-    tab->setTabIcon(5,QIcon(":mesh"));
-    tab->setTabToolTip(5,tr("Mesh tools"));
-
-    tab->addTab(labelInterpolation->getMenu(this),tr(""));
-    tab->setTabIcon(6,QIcon(":segm3Dicon"));
-    tab->setTabToolTip(6,tr("Interpolation tool"));
+    tab->setTabIcon(6,QIcon(":mesh"));
+    tab->setTabToolTip(6,tr("Mesh tools"));
 
     connect(tab, SIGNAL(currentChanged(int)),this, SLOT(ToolChanged(int)));
 

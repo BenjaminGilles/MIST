@@ -3,6 +3,7 @@
 
 #include <tools/baseTool.h>
 #include <QToolBar>
+#include <QComboBox>
 #include <QFileDialog>
 #include <QVBoxLayout>
 #include <QMessageBox>
@@ -12,32 +13,46 @@ class labelInterpolationTool:public baseTool
     Q_OBJECT
 
 public:
-    labelInterpolationTool(MPRImageView* v,image<T>* i):baseTool(v,i) {}
+    labelInterpolationTool(MPRImageView* v,image<T>* i):baseTool(v,i),areaCombo(NULL) {}
     ~labelInterpolationTool()
     {
+        if(areaCombo!=NULL) delete areaCombo;
     }
 
     virtual QWidget* getMenu(QWidget *parent=NULL)
     {
+        QLabel* areaLabel=new QLabel(tr("Direction:"),parent);
+
+        areaCombo=new QComboBox(parent);
+        areaCombo->setToolTip(tr("Direction"));
+        areaCombo->setStatusTip(tr("Direction along which the interpolation is performed"));
+        areaCombo->addItem("x");
+        areaCombo->addItem("y");
+        areaCombo->addItem("z");
+        areaCombo->setCurrentIndex(2);
+
+        QToolBar* comboToolBar=new QToolBar(parent);
+        comboToolBar->addWidget(areaLabel);
+        comboToolBar->addSeparator();
+        comboToolBar->addWidget(areaCombo);
+        comboToolBar->addSeparator();
+
         QAction* computeAct = new QAction(tr("Interpolate selection"), parent);
         computeAct->setStatusTip(tr("Interpolate selection"));
         connect(computeAct, SIGNAL(triggered()),this, SLOT(InterpolateSelection()));
-
-        QToolBar* ToolBar=new QToolBar(parent);
-        ToolBar->addAction(computeAct);
-        ToolBar->addSeparator();
 
         QAction* computeAct2 = new QAction(tr("Interpolate labels"), parent);
         computeAct2->setStatusTip(tr("Interpolate all labels"));
         connect(computeAct2, SIGNAL(triggered()),this, SLOT(InterpolateLabels()));
 
-        QToolBar* ToolBar2=new QToolBar(parent);
-        ToolBar2->addAction(computeAct2);
-        ToolBar2->addSeparator();
+        QToolBar* ToolBar=new QToolBar(parent);
+        ToolBar->addAction(computeAct);
+        ToolBar->addAction(computeAct2);
+        ToolBar->addSeparator();
 
         QVBoxLayout *layout = new QVBoxLayout();
+        layout->addWidget(comboToolBar);
         layout->addWidget(ToolBar);
-        layout->addWidget(ToolBar2);
         layout->addStretch();
 
         QWidget *w = new QWidget(parent);
@@ -50,24 +65,20 @@ public slots:
 
     void InterpolateSelection()
     {
-        unsigned int nbslices= img->interpolateROI(0);
-        nbslices+= img->interpolateROI(1);
-        nbslices+= img->interpolateROI(2);
+        unsigned int nbslices= img->interpolateROI(areaCombo->currentIndex());
         emit statusChanged(tr("Interpolated %1 slices").arg(nbslices));
         mprview->Render(true);
     }
 
     void InterpolateLabels()
     {
-        unsigned int nbslices= img->interpolateLabels(0);
-        nbslices+= img->interpolateLabels(1);
-        nbslices+= img->interpolateLabels(2);
+        unsigned int nbslices= img->interpolateLabels(areaCombo->currentIndex());
         emit statusChanged(tr("Interpolated %1 slices").arg(nbslices));
         mprview->Render(true);
     }
 
 private:
-
+    QComboBox* areaCombo;
 };
 
 #endif
