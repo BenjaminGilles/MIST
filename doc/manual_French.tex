@@ -9,7 +9,7 @@
 \usepackage{charter}
 \usepackage{graphicx}
 
-\title{Manuel utilisateur de QT segmentation
+\title{Manuel utilisateur de MIST
 \\
 version 1.0
 \\
@@ -30,25 +30,25 @@ version 1.0
 
 \part{Introduction}
 
-QT segmentation est un logiciel en accès libre. C'est un outil manuel de segmentation d'images, proposant des fonctionnalités de base permettant d'aboutir à un maillage tridimensionnel.
+MIST est un logiciel en accès libre. C'est un outil manuel de segmentation d'images, proposant des fonctionnalités de base permettant d'aboutir à un maillage tridimensionnel.
 \\
 Cette documentation est destinée à permettre la prise en main du logiciel par les débutants en informatique et traitement d'image volumique.
 
-\part{Installation de QT segmentation}
+\part{Installation de MIST}
 
 \section{Programmes pré-requis}
 
 Pour l'installation et la compilation du logiciel, les programmes suivants doivent être installés au préalable:
 \begin{description}
 \item[QT creator]: \url{https://www.qt.io/download/}
-\item[Inscription plateforme gforge]: \url{https://gforge.inria.fr/}
+\item[Code source sur github]: \url{https://github.com/BenjaminGilles/MIST}
 \end{description}
 
 \section{Installation}
 
 \part{Interface}
 
-Lors de l'ouverture de QT segmentation, l'interface s'affiche. 
+Lors de l'ouverture de MIST, l'interface s'affiche. 
 
 
 	\begin{center}
@@ -170,7 +170,7 @@ Cet outil permet de générer un maillage (objet 3D) à partir de votre segmenta
 
 \begin{itemize}
 	\item[\textbf{1}]: Pour un label sélectionné, l'outil de calcul des surface permet de générer le maillage. La valeur numérique située à sa droite renseigne sur le nombre d'étapes de cette opération. Par convention, la valeur 0 équivaut à un calcul prenant en compte l'ensemble des données. Il est donc préférable de ne jamais changer cette valeur. Toute fois, si l'image à générer est trop volumineuse (génération d'un message d'erreur et fermeture du programme), il est possible de modifier cette valeur numérique. Il faudra alors choisir une valeur la plus élevée possible, qui correspond aux nombres de calculs effectués pour générer le maillage (exemple: 200).
-	\item[\textbf{2}]: Une fois l'étape de calcul effectuée (peut prendre parfois quelques minutes), il est impératif de sauvegarder le maillage. Attention, le rendu 3D n'est pas visible sur QT segmentation: pour le visionner, il faut utiliser un logiciel dédié (type Meshlab). Par précaution, nous vous conseillons d'ouvrir le maillage créé dans un logiciel dédié avant de fermer QT segmentation pour prévenir des défauts de sauvegarde.
+	\item[\textbf{2}]: Une fois l'étape de calcul effectuée (peut prendre parfois quelques minutes), il est impératif de sauvegarder le maillage. Attention, le rendu 3D n'est pas visible sur MIST: pour le visionner, il faut utiliser un logiciel dédié (type Meshlab). Par précaution, nous vous conseillons d'ouvrir le maillage créé dans un logiciel dédié avant de fermer MIST pour prévenir des défauts de sauvegarde.
 
 	
 \end{itemize}
@@ -217,7 +217,7 @@ Voici l'aspect final:
 \end{center}
 
 
-Pour comprendre l'exemple: imaginez que QT segmentation fonctionne comme les logiciels de retouche d'image, avec des calques. Chaque label représente un calque, et il faut trouver solution la plus simple et la moins chronophage pour aboutir à la segmentation souhaitée.	
+Pour comprendre l'exemple: imaginez que MIST fonctionne comme les logiciels de retouche d'image, avec des calques. Chaque label représente un calque, et il faut trouver solution la plus simple et la moins chronophage pour aboutir à la segmentation souhaitée.	
 
 Attention: la segmentation de la peau n'a été effectuée que sur cette coupe (car option 2D sélectionnée). Nous aurions pu réaliser ceci en 3D directement, mais cela peut occasionner des erreurs: si l'air extérieur est en contact avec l'air intérieur sur une ou plusieurs coupes, la sélection isolée de l'air extérieur n'aurait pas été possible en 3D! Cela aurait été le cas dans cet exemple puisque nous avions à faire à une tête humaine avec l'air communiquant par les narines. Pour pallier à ce problème, nous vous conseillons de réaliser la segmentation coupe par coupe au niveau de ces \og zones frontières \fg , puis de réaliser une segmentation 3D au dessus et en dessous de ces coupes.  
 

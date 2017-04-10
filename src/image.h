@@ -36,13 +36,19 @@ public:
     CImg<float> normals;
     double center[3];
 
-    bool save(const std::string& objFile)
+    bool save(const std::string& objFile, const std::string& mtlFile, const unsigned char col[3])
     {
         if(!vertices.width()) return false;
 
+        QFileInfo fileInfo(QString(mtlFile.c_str()));
+        QString mtlshortFile=fileInfo.fileName();
+
         std::ofstream objStream (objFile.c_str());
         if(!objStream.is_open()) return false;
+        objStream<<"mtllib "<<mtlshortFile.toStdString().c_str()<<std::endl;
+        objStream<<std::endl<<"usemtl \""<<"mat\""<<std::endl;
         cimg_forX(vertices,j) objStream<<"v "<<vertices(j,0)<<" "<<vertices(j,1)<<" "<<vertices(j,2)<<std::endl;
+
         cimglist_for(faces,l)
         {
             objStream<<"f";
@@ -50,6 +56,13 @@ public:
             objStream<<std::endl;
         }
         objStream.close();
+
+        std::ofstream mtlStream (mtlFile.c_str());
+        if(!mtlStream.is_open()) return false;
+        mtlStream<<"newmtl \""<<"mat\""<<std::endl;
+        mtlStream<<"Kd "; for(unsigned int k=0;k<3;k++)  mtlStream<<" "<<(double)col[k]/255.; mtlStream<<std::endl;
+        mtlStream<<std::endl;
+        mtlStream.close();
         return true;
     }
 
@@ -204,6 +217,63 @@ public:
         qDebug()<<"rotation:"<<rotation[0][0]<<","<<rotation[0][1]<<","<<rotation[0][2]<<","<<rotation[1][0]<<","<<rotation[1][1]<<","<<rotation[1][2]<<","<<rotation[2][0]<<","<<rotation[2][1]<<","<<rotation[2][2];
         return true;
     }
+
+
+
+    bool stackImage(const char* filename)
+    {
+        if(fopen(filename, "r")==NULL) return false;
+
+        //load second image
+        CImg<T> img2;
+        real voxelSize2[3];
+        real translation2[3];
+        real rotation2[3][3];
+
+        std::string file(filename);
+        if (file.find(".hdr")!=std::string::npos)        img2.load_analyze(filename,voxelSize2);
+        else if(file.find(".mhd")!=std::string::npos || file.find(".MHD")!=std::string::npos || file.find(".Mhd")!=std::string::npos
+                || file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)
+        {
+            if(file.find(".raw")!=std::string::npos || file.find(".RAW")!=std::string::npos || file.find(".Raw")!=std::string::npos)      file.replace(file.find_last_of('.')+1,file.size(),"mhd");
+            img2=load_metaimage<T,real>(file.c_str(),voxelSize2,translation2,&(rotation2[0][0]))(0);
+        }
+        else if (file.find(".inr")!=std::string::npos)
+        {
+            float voxsize[3];
+            img2.load_inr(file.c_str(),voxsize);
+            for(unsigned int i=0;i<3;i++) voxelSize2[i]=(real)voxsize[i];
+        }
+        else img2.load(file.c_str());
+
+        if(img2.is_empty()) return false;
+
+        // stack in z direction
+        if (dim[0]!=(unsigned int)img2.width() || dim[1]!=(unsigned int)img2.height()) return false;
+
+        unsigned int olddepth = dim[2];
+        dim[2] = dim[2]+img2.depth();
+        img.resize(dim[0],dim[1],dim[2],1,0);
+        for(unsigned int i=0;i<(unsigned int)img2.depth();i++) img.get_shared_slice(i+olddepth) = img2.get_shared_slice(i);
+
+        resetViewBB();
+
+        roi.resize(dim[0],dim[1],dim[2],1); roi.fill(0);
+        label.resize(dim[0],dim[1],dim[2],1);
+
+        intensityRange[0]=img.min();
+        intensityRange[1]=img.max();
+
+        imageFileName=std::string(filename);
+        QFileInfo fileInfo(QString(imageFileName.c_str()));         currentPath=fileInfo.path().toStdString();
+
+        qDebug()<<"dim:"<<dim[0]<<","<<dim[1]<<","<<dim[2];
+        qDebug()<<"voxelSize:"<<voxelSize[0]<<","<<voxelSize[1]<<","<<voxelSize[2];
+        qDebug()<<"translation:"<<translation[0]<<","<<translation[1]<<","<<translation[2];
+        qDebug()<<"rotation:"<<rotation[0][0]<<","<<rotation[0][1]<<","<<rotation[0][2]<<","<<rotation[1][0]<<","<<rotation[1][1]<<","<<rotation[1][2]<<","<<rotation[2][0]<<","<<rotation[2][1]<<","<<rotation[2][2];
+        return true;
+    }
+
 
 
     bool saveImage(const char* filename)
@@ -423,16 +493,27 @@ public:
         roi.resize(newDim[0],newDim[1],newDim[2],-100,1);
         cimg_foroff(roif,off) if(roif[off]>0.5) roi[off]=true; else roi[off]=false;
 
+        cimg_library::CImg<float> metric_distance(2,2,2,1,0);
+        metric_distance(1,0,0)=this->voxelSize[0];
+        metric_distance(0,1,0)=this->voxelSize[1];
+        metric_distance(0,0,1)=this->voxelSize[2];
+        metric_distance(1,1,0)=sqrt(this->voxelSize[0]*this->voxelSize[0]+this->voxelSize[1]*this->voxelSize[1]);
+        metric_distance(1,0,1)=sqrt(this->voxelSize[0]*this->voxelSize[0]+this->voxelSize[2]*this->voxelSize[2]);
+        metric_distance(0,1,1)=sqrt(this->voxelSize[1]*this->voxelSize[1]+this->voxelSize[2]*this->voxelSize[2]);
+        metric_distance(1,1,1)=sqrt(this->voxelSize[0]*this->voxelSize[0]+this->voxelSize[1]*this->voxelSize[1]+this->voxelSize[2]*this->voxelSize[2]);
+
         CImg<unsigned char> newlabel(newDim[0],newDim[1],newDim[2]); newlabel.fill(0);
+        CImg<float> labelf(label.width(),label.height(),label.depth(),label.spectrum(),0.0);
         for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
         {
+            //qDebug()<<"resample:"<<labelName[i].c_str();
             bool empty=true;
-            CImg<float> labelf(label.width(),label.height(),label.depth(),label.spectrum(),0.0);
-            cimg_forXYZ(label,x,y,z) if(label(x,y,z)==(unsigned char)i) { labelf(x,y,z)=1.0; empty=false; }
+            cimg_forXYZ(label,x,y,z) if(label(x,y,z)==(unsigned char)i) { labelf(x,y,z)=1.0; empty=false; } else labelf(x,y,z)=0.0;
             if(!empty)
             {
-                labelf.resize(newDim[0],newDim[1],newDim[2],-100,3);
-                cimg_foroff(labelf,off) if(labelf[off]>0.5) newlabel[off]=(unsigned char)i;
+                labelf=   labelf.get_distance ( 1.0 , metric_distance) - labelf.get_distance ( 0.0 , metric_distance);
+                CImg<float> newl = labelf.get_resize(newDim[0],newDim[1],newDim[2],-100,3);
+                cimg_foroff(newl,off) if(newl[off]<0) newlabel[off]=(unsigned char)i;
             }
         }
         label=newlabel;
@@ -1937,9 +2018,9 @@ public:
     void getPlaneSize(double &z, double xy[2], const unsigned int area)
     {
         int dir[2]; getPlaneDirections(dir,area);
-        xy[0]=voxelSize[dir[0]]*(double)dimBB[dir[0]];
-        xy[1]=voxelSize[dir[1]]*(double)dimBB[dir[1]];
-        z=voxelSize[area]*(double)dimBB[area];
+        xy[0]=voxelSize[dir[0]]*(double)dimBB[dir[0]] /voxelSize[0];
+        xy[1]=voxelSize[dir[1]]*(double)dimBB[dir[1]] /voxelSize[0];
+        z=voxelSize[area]*(double)dimBB[area] /voxelSize[0];
     }
 
 
@@ -2089,27 +2170,33 @@ public:
     unsigned int marchingCubes(const int res=0)
     {
         unsigned int nbfaces=0;
+        CImg<bool> sel(label.width(),label.height(),label.depth(),label.spectrum(),false);
+
         for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
         {
+            //qDebug()<<"marching cubes: "<<labelName[i].c_str();
             meshes[i].faces.assign();
             meshes[i].vertices.assign();
 
-            CImg<bool> sel(label.width(),label.height(),label.depth(),label.spectrum(),false);
-            cimg_forXYZ(label,x,y,z) if(label(x,y,z)==i) sel(x,y,z)=true;
+            bool empty=true;
+            cimg_forXYZ(label,x,y,z) if(label(x,y,z)==i) {sel(x,y,z)=true; empty=false;} else {sel(x,y,z)=false;}
 
-            int r=res; if(r<=0) r=-100;
-            meshes[i].vertices = sel.get_isosurface3d (meshes[i].faces, 1.0,r,r,r);
-            // transform points
-            cimg_forX(meshes[i].vertices,j)
+            if(!empty)
             {
-                real p[3],p0[3]={meshes[i].vertices(j,0),meshes[i].vertices(j,1),meshes[i].vertices(j,2)};
-                imageCoordToPos(p,p0);
-                for(unsigned int k=0;k<3;k++) meshes[i].vertices(j,k)=p[k];
+                int r=res; if(r<=0) r=-100;
+                meshes[i].vertices = sel.get_isosurface3d (meshes[i].faces, 1.0,r,r,r);
+                // transform points
+                cimg_forX(meshes[i].vertices,j)
+                {
+                    real p[3],p0[3]={meshes[i].vertices(j,0),meshes[i].vertices(j,1),meshes[i].vertices(j,2)};
+                    imageCoordToPos(p,p0);
+                    for(unsigned int k=0;k<3;k++) meshes[i].vertices(j,k)=p[k];
+                }
+                // flip faces
+                cimglist_for(meshes[i].faces,l) meshes[i].faces(l).mirror('y');
+                nbfaces+=meshes[i].faces.size();
+                meshes[i].update();
             }
-            // flip faces
-            cimglist_for(meshes[i].faces,l) meshes[i].faces(l).mirror('y');
-            nbfaces+=meshes[i].faces.size();
-            meshes[i].update();
         }
         return nbfaces;
     }
@@ -2117,7 +2204,12 @@ public:
     bool saveObjs(const std::string& path)
     {
         for(unsigned int i=1;i<MAXLABELS;i++) // ignore exterior
-            meshes[i].save(path+std::string("/")+labelName[i]+std::string(".obj"));
+        {
+            unsigned char col[3]={palette(i,0,0,0),palette(i,0,0,1),palette(i,0,0,2)};
+            QString name (labelName[i].c_str());
+            name.replace(' ','_');
+            meshes[i].save(path+std::string("/")+name.toStdString()+std::string(".obj"),path+std::string("/")+name.toStdString()+std::string(".mtl"),col);
+        }
         return true;
     }
 

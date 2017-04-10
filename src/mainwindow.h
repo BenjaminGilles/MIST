@@ -30,6 +30,7 @@ public:
 public slots:
     void about();
     void load();
+    void stack();
     void saveAs();
     void loadSegmentation();
     void saveSegmentation();
@@ -53,7 +54,7 @@ private:
     regionGrowingTool* regionGrowing;
     marchingCubesTool* marchingCubes;
     landmarksTool* landmarks;
-    Segment3DTool* Segmentation3D; // Patotskaya
+    Segment3DTool* segmentation3D;  // Patotskaya
 
 #ifdef USEGL
     GLWidget* glwidget;
@@ -70,6 +71,7 @@ private:
     QToolBar *toolBar;
 
     QAction *openAct;
+    QAction *stackAct;
     QAction *saveAsAct;
     QAction *openLabAct;
     QAction *saveLabAsAct;

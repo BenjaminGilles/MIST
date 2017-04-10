@@ -42,6 +42,7 @@ contains(DEFINES, USEGL) {
     SOURCES  += widgets/glWidget.cpp
 }
 
+LIBS += -lz
 
 #QMAKE_CXXFLAGS+= -fopenmp
 #QMAKE_LFLAGS +=  -fopenmp
