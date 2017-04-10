@@ -144,8 +144,9 @@ public slots:
 
     void Invert()
     {
-        if(is2D) {  for(unsigned int i=0;i<3;i++) if(mprview->view[i]->isVisible()) img->InvertROI2D(i); }
-        else img->InvertROI();
+//        if(is2D) {  for(unsigned int i=0;i<3;i++) if(mprview->view[i]->isVisible()) img->InvertROI2D(i); }
+//        else
+        img->InvertROI();
         mprview->Render(true);
     }
 
