@@ -28,7 +28,7 @@ HEADERS  += mainwindow.h\
     tools/regionGrowing.h \
     tools/landmarks.h \
     tools/marchingCubes.h \
-    tools/segmentation3D.h
+    tools/labelInterpolation.h
 
 INCLUDEPATH += $$CIMG_PATH
 

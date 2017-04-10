@@ -4,7 +4,6 @@
 #include <tools/baseTool.h>
 #include <QLabel>
 #include <QSlider>
-#include <QComboBox>
 #include <QHeaderView>
 #include <QColorDialog>
 #include <QGroupBox>

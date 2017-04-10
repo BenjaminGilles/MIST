@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -974,6 +975,97 @@ public:
         unselectLockedLabels();
     }
 
+
+    unsigned int interpolateLabels(const unsigned int area)
+    {
+        unsigned count=0;
+        std::set<unsigned int> toBeInterpolated;
+        cimg_forXYZ(label,x,y,z)
+                if(label(x,y,z))
+                if(!labelLock[label(x,y,z)]) toBeInterpolated.insert(label(x,y,z));
+
+        for(std::set<unsigned int>::iterator it=toBeInterpolated.begin(); it!=toBeInterpolated.end(); ++it) // ignore exterior
+        {
+            clearRoi();
+            addLabelToRoi(*it);
+            count+=interpolateROI(area);
+            addRoiToLabel(*it);
+        }
+        clearRoi();
+        return count;
+    }
+
+    unsigned int interpolateROI(const unsigned int area)
+    {
+        int dir[2]; getPlaneDirections(dir,area);
+        CImg<float> roi2D_1(dim[dir[0]],dim[dir[1]]),roi2D_2(dim[dir[0]],dim[dir[1]]);
+
+        // retrieve ranges of missing planes
+        int P[3];
+        std::vector<std::pair<unsigned int,unsigned int> > ranges;
+        int previousNonEmpty=-1;
+        bool inRange=false;
+        for(unsigned int i=0;i<dim[area];++i)
+        {
+            // 2D roi
+            bool isEmpty=true;
+            P[area]=i;
+            cimg_forXY(roi2D_1,x,y)
+            {
+                P[dir[0]]=x; P[dir[1]]=y;
+                if(roi(P[0],P[1],P[2])) isEmpty=false;
+            }
+
+            if(!isEmpty)
+            {
+                if(inRange)
+                {
+                    ranges.push_back(std::pair<unsigned int,unsigned int>(previousNonEmpty,i));
+                    inRange=false;
+                }
+                previousNonEmpty=i;
+            }
+            else
+            {
+                if(previousNonEmpty!=-1) inRange=true;
+            }
+        }
+
+        // interpolate distance maps
+        unsigned int count =0;
+
+        cimg_library::CImg<float> metric_distance(2,2,1,1,0);
+        metric_distance(1,0,0)=this->voxelSize[dir[0]];
+        metric_distance(0,1,0)=this->voxelSize[dir[1]];
+        metric_distance(1,1,0)=sqrt(this->voxelSize[dir[0]]*this->voxelSize[dir[0]]+this->voxelSize[dir[1]]*this->voxelSize[dir[1]]);
+
+        for(unsigned int r=0;r<ranges.size();++r)
+        {
+            unsigned int s1 = ranges[r].first,s2 = ranges[r].second;
+            cimg_forXY(roi2D_1,x,y)
+            {
+                P[dir[0]]=x; P[dir[1]]=y;
+                P[area]=s1; roi2D_1(x,y)=roi(P[0],P[1],P[2]);
+                P[area]=s2; roi2D_2(x,y)=roi(P[0],P[1],P[2]);
+            }
+
+            roi2D_1=   roi2D_1.get_distance ( 1.0 , metric_distance) - roi2D_1.get_distance ( 0.0 , metric_distance);
+            roi2D_2=   roi2D_2.get_distance ( 1.0 , metric_distance) - roi2D_2.get_distance ( 0.0 , metric_distance);
+
+            for(unsigned int i=s1+1;i<s2;++i)
+            {
+                float w=((float)i-(float)s2)/((float)s1-(float)s2);
+                P[area]=i;
+                cimg_forXY(roi2D_1,x,y)
+                {
+                    P[dir[0]]=x; P[dir[1]]=y;
+                    if( ( w*roi2D_1(x,y) + (1.-w)*roi2D_2(x,y)) <0 ) roi(P[0],P[1],P[2])=true; else roi(P[0],P[1],P[2])=false;
+                }
+                count++;
+            }
+        }
+        return count;
+    }
 
 
     void addLandmark()

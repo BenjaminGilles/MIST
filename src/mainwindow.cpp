@@ -26,7 +26,7 @@ MainWindow::~MainWindow()
     delete regionGrowing;
     delete marchingCubes;
     delete landmarks;
-    // delete segmentation3D; //Patotskaya
+    delete labelInterpolation;
 #ifdef USEGL
     delete glwidget;
 # endif
@@ -198,7 +198,7 @@ QWidget *MainWindow::createTools()
     regionGrowing = new regionGrowingTool(mprview,&img);
     landmarks = new landmarksTool(mprview,&img);
     marchingCubes = new marchingCubesTool(mprview,&img);
-    // segmentation3D = new segmentation3DTool(mprview,&img); //Patotskaya
+    labelInterpolation = new labelInterpolationTool(mprview,&img);
 
     QTabWidget* tab = new QTabWidget(this);
     tab->setIconSize(QSize(30,30));
@@ -227,12 +227,9 @@ QWidget *MainWindow::createTools()
     tab->setTabIcon(5,QIcon(":mesh"));
     tab->setTabToolTip(5,tr("Mesh tools"));
 
-    // >>> Patotskaya
-    // Add tool
-//    tab->addTab(segmentation3D->getMenu(this),tr(""));
-//    tab->setTabIcon(6,QIcon(":segm3Dicon"));
-//    tab->setTabToolTip(6,tr("Segmentation 3D tool"));
-    // <<< Patotskaya
+    tab->addTab(labelInterpolation->getMenu(this),tr(""));
+    tab->setTabIcon(6,QIcon(":segm3Dicon"));
+    tab->setTabToolTip(6,tr("Interpolation tool"));
 
     connect(tab, SIGNAL(currentChanged(int)),this, SLOT(ToolChanged(int)));
 

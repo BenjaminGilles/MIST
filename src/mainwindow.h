@@ -13,7 +13,7 @@
 #include <tools/marchingCubes.h>
 #include <tools/regionGrowing.h>
 #include <tools/landmarks.h>
-#include <tools/segmentation3D.h>
+#include <tools/labelInterpolation.h>
 
 #ifdef USEGL
 #include <widgets/glWidget.h>
@@ -54,7 +54,7 @@ private:
     regionGrowingTool* regionGrowing;
     marchingCubesTool* marchingCubes;
     landmarksTool* landmarks;
-    // segmentation3DTool* segmentation3D;  // Patotskaya
+    labelInterpolationTool* labelInterpolation;
 
 #ifdef USEGL
     GLWidget* glwidget;
