@@ -10,7 +10,10 @@
 
 #define cimg_display 0
 #include "CImg.h"
-#include <zlib.h>
+#if !(_WIN32 || _WIN64)
+    #include <zlib.h>
+#endif
+
 
 using namespace cimg_library;
 
@@ -76,6 +79,7 @@ bool save_metaimage(const CImgList<T>& img,const char *const headerFilename, con
 }
 
 
+#if !(_WIN32 || _WIN64)
 
 template<typename T>
 inline int fread_gz(T *const ptr, const unsigned int nmemb, gzFile stream)
@@ -97,6 +101,7 @@ inline int fread_gz(T *const ptr, const unsigned int nmemb, gzFile stream)
     return (int)al_read;
 }
 
+#endif
 
 template<typename Tin,typename Tout>
 inline int readAndConvert(CImgList<Tout>& img, const char* filename, const bool isCompressed=false, const bool invert_endianness=false)
@@ -105,6 +110,7 @@ inline int readAndConvert(CImgList<Tout>& img, const char* filename, const bool 
 
     if(isCompressed)
     {
+        #if !(_WIN32 || _WIN64)
         gzFile file = gzopen(filename, "rb");
         if(!file) return 0;
         Tin *const buffer = new Tin[nb];
@@ -116,6 +122,7 @@ inline int readAndConvert(CImgList<Tout>& img, const char* filename, const bool 
         }
         delete[] buffer;
         gzclose(file);
+        #endif
     }
     else
     {
@@ -143,14 +150,17 @@ inline int read(CImgList<Tout>& img, const char* filename, const bool isCompress
 
     if(isCompressed)
     {
-        gzFile file = gzopen(filename, "rb");
-        if(!file) return 0;
-        cimglist_for(img,l)
-        {
-            fread_gz(img(l)._data,nb,file);
-            if (invert_endianness) cimg::invert_endianness(img(l)._data,nb);
-        }
-        gzclose(file);
+        #if !(_WIN32 || _WIN64)
+
+            gzFile file = gzopen(filename, "rb");
+            if(!file) return 0;
+            cimglist_for(img,l)
+            {
+                fread_gz(img(l)._data,nb,file);
+                if (invert_endianness) cimg::invert_endianness(img(l)._data,nb);
+            }
+            gzclose(file);
+        #endif
     }
     else
     {
