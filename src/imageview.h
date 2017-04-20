@@ -61,7 +61,7 @@ public:
     double labelOpacity;
     double roiOpacity;
     bool labelBorderOnly;
-    enum Mode {Navigation,Zoom,Brush,RegionGrowing,Morpho,Landmarks,MarchingCubes,Segmentation3D};
+    enum Mode {Navigation,Zoom,Brush,RegionGrowing,Morpho,Landmarks,MarchingCubes,Interpolation};
     Mode mode;
     enum Qt::MouseButton pressed;
     Qt::KeyboardModifiers pressedModifiers;

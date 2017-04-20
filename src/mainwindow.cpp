@@ -254,16 +254,19 @@ void MainWindow::ToolChanged(int index)
         mprview->setViewMode(GraphView::Morpho);
         break;
     case 2:
-        mprview->setViewMode(GraphView::Brush);
+        mprview->setViewMode(GraphView::Interpolation);
         break;
     case 3:
+        mprview->setViewMode(GraphView::Brush);
+        break;
+    case 4:
         regionGrowing->reinit(); // hack to propagate min/max changes from imagetools
         mprview->setViewMode(GraphView::RegionGrowing);
         break;
-    case 4:
+    case 5:
         mprview->setViewMode(GraphView::Landmarks);
         break;
-    case 5:
+    case 6:
         mprview->setViewMode(GraphView::MarchingCubes);
         break;
     default:
